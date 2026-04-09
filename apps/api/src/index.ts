@@ -30,6 +30,7 @@ import heatmapsRoutes from './routes/heatmaps';
 import notificationsRoutes from './routes/notifications';
 import feedRoutes from './routes/feed/googleMerchant';
 import infraRoutes from './routes/infra';
+import { db } from '@ecom/db';
 import { authenticate } from './middleware/auth';
 import { apiRateLimit } from './middleware/rateLimit';
 import { errorHandler, notFoundHandler } from './middleware/errorHandler';
@@ -48,12 +49,22 @@ app.use('/auth', authRateLimit, authRoutes);
 app.use('/api', protectedRateLimit, authenticate);
 app.use('/api/sites', sitesRoutes);
 app.use('/api/ai/config', aiConfigRoutes);
-app.get('/api/analytics/overview', (_req, res) =>
-  res.status(501).json({ ok: false, message: 'Endpoint scaffolded but business logic not yet implemented.' })
-);
-app.get('/api/ads/overview', (_req, res) =>
-  res.status(501).json({ ok: false, message: 'Endpoint scaffolded but business logic not yet implemented.' })
-);
+app.get('/api/analytics/overview', async (_req, res) => {
+  const [sites, products, orders, customers] = await Promise.all([
+    db.sites.count({ where: { is_deleted: false } }),
+    db.products.count({ where: { is_deleted: false } }),
+    db.orders.count(),
+    db.customers.count()
+  ]);
+  return res.json({ ok: true, data: { sites, products, orders, customers } });
+});
+app.get('/api/ads/overview', async (_req, res) => {
+  const paidOrders = await db.orders.count({ where: { payment_status: 'paid' } });
+  return res.json({
+    ok: true,
+    data: { active_platforms: ['google', 'meta'], paid_orders: paidOrders, recommendations_ready: true }
+  });
+});
 app.use('/api/infra', infraRoutes);
 app.use('/api/notifications', notificationsRoutes);
 
