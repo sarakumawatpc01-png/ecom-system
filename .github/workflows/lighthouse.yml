@@ -26,8 +26,14 @@ jobs:
 
       - name: Start site-demo
         run: |
-          npm run start --workspace @ecom/site-demo > /tmp/site-demo.log 2>&1 &
-          echo $! > /tmp/site-demo.pid
+          setsid npm run start --workspace @ecom/site-demo > /tmp/site-demo.log 2>&1 &
+          server_pid=$!
+          if ! ps -p "$server_pid" > /dev/null; then
+            echo "site-demo failed to start"
+            cat /tmp/site-demo.log || true
+            exit 1
+          fi
+          echo "$server_pid" > /tmp/site-demo.pid
 
       - name: Wait for site-demo
         run: npx wait-on --timeout 60000 http://127.0.0.1:3000
@@ -44,5 +50,5 @@ jobs:
         if: always()
         run: |
           if [ -f /tmp/site-demo.pid ]; then
-            kill "$(cat /tmp/site-demo.pid)" || true
+            kill -TERM -"$(cat /tmp/site-demo.pid)" || true
           fi
