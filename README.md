@@ -34,6 +34,8 @@ Key variables used by current scaffold:
 - API: `PORT`, `JWT_SECRET`, `DATABASE_URL`
 - Site apps: `SITE_ID`, `API_BASE`, `NEXT_PUBLIC_SITE_ID`, `NEXT_PUBLIC_API_BASE`
 - Monitoring: `SENTRY_DSN`, `NEXT_PUBLIC_SENTRY_DSN`, `GSC_SYNC_ENABLED`, `GSC_SYNC_CRON`
+- Security/queue: `REDIS_URL`, `CORS_ALLOWED_ORIGINS`
+- SMTP (global fallback): `SMTP_FROM`
 
 For per-site Google Search Console OAuth, store credentials in `sites.config` JSON:
 
@@ -44,6 +46,25 @@ For per-site Google Search Console OAuth, store credentials in `sites.config` JS
     "clientId": "google-oauth-client-id",
     "clientSecret": "google-oauth-client-secret",
     "refreshToken": "google-oauth-refresh-token"
+  }
+}
+```
+
+For per-site SMTP + branding email templates, store in `sites.config` JSON:
+
+```json
+{
+  "smtp": {
+    "host": "smtp.example.com",
+    "port": 587,
+    "user": "smtp-user",
+    "pass": "smtp-pass",
+    "from": "no-reply@example.com",
+    "secure": false
+  },
+  "branding": {
+    "logo": "https://cdn.example.com/logo.png",
+    "primaryColor": "#1f2937"
   }
 }
 ```

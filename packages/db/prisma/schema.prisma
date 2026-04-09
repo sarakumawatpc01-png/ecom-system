@@ -655,6 +655,36 @@ model seo_audit_results {
   @@index([site_id, status])
 }
 
+model email_logs {
+  id            String   @id @default(uuid()) @db.Uuid
+  site_id       String?  @db.Uuid
+  email_type    String
+  to_email      String
+  subject       String
+  status        String   @default("queued")
+  payload       Json?
+  error_message String?
+  sent_at       DateTime?
+  created_at    DateTime @default(now())
+
+  @@index([site_id, created_at])
+  @@index([status, created_at])
+}
+
+model admin_activity_logs {
+  id         String   @id @default(uuid()) @db.Uuid
+  user_id    String   @db.Uuid
+  site_id    String?  @db.Uuid
+  action     String
+  entity     String
+  entity_id  String?
+  meta       Json?
+  created_at DateTime @default(now())
+
+  @@index([user_id, created_at])
+  @@index([site_id, created_at])
+}
+
 model heatmap_events {
   id         String   @id @default(uuid()) @db.Uuid
   site_id    String   @db.Uuid

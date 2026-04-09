@@ -30,17 +30,32 @@ import heatmapsRoutes from './routes/heatmaps';
 import notificationsRoutes from './routes/notifications';
 import feedRoutes from './routes/feed/googleMerchant';
 import infraRoutes from './routes/infra';
+import prelaunchRoutes from './routes/prelaunch';
 import { db } from './lib/db';
 import { authenticate } from './middleware/auth';
+import { adminActivityLogger } from './middleware/activityLogger';
 import { apiRateLimit } from './middleware/rateLimit';
 import { errorHandler, notFoundHandler } from './middleware/errorHandler';
 import { runStartupAudit } from './services/startupAudit';
+import { startEmailWorker } from './workers/emailWorker';
 import { initSentry } from './services/monitoring/sentry';
 import { startGscWorker } from './workers/gscWorker';
 import { startSeoWorker } from './workers/seoWorker';
 
 const app = express();
-app.use(cors());
+const allowedOrigins = (process.env.CORS_ALLOWED_ORIGINS || 'http://localhost:3000,http://localhost:3001,http://localhost:3002')
+  .split(',')
+  .map((origin) => origin.trim())
+  .filter(Boolean);
+app.use(
+  cors({
+    origin: (origin, callback) => {
+      if (!origin) return callback(null, true);
+      if (allowedOrigins.includes(origin)) return callback(null, true);
+      return callback(new Error('CORS origin not allowed'));
+    }
+  })
+);
 app.use(express.json({ limit: '5mb' }));
 app.use(apiRateLimit);
 const authRateLimit = rateLimit({ windowMs: 60_000, limit: 20, standardHeaders: 'draft-7', legacyHeaders: false });
@@ -60,6 +75,7 @@ app.get('/api/health/startup', async (_req, res) => {
 app.use('/auth', authRateLimit, authRoutes);
 
 app.use('/api', protectedRateLimit, authenticate);
+app.use('/api', adminActivityLogger);
 app.use('/api/sites', sitesRoutes);
 app.use('/api/ai/config', aiConfigRoutes);
 app.get('/api/analytics/overview', async (_req, res) => {
@@ -104,6 +120,7 @@ app.use('/api/:siteId/ab-tests', abTestsRoutes);
 app.use('/api/:siteId/redirects', redirectsRoutes);
 app.use('/api/:siteId/heatmaps', heatmapsRoutes);
 app.use('/api/:siteId/feed', feedRoutes);
+app.use('/api/:siteId/prelaunch', prelaunchRoutes);
 
 app.use(notFoundHandler);
 app.use(errorHandler);
@@ -113,5 +130,6 @@ app.listen(port, () => {
   initSentry();
   startSeoWorker();
   startGscWorker();
+  startEmailWorker();
   console.log(`API listening on port ${port}`);
 });

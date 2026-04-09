@@ -1,11 +1,29 @@
 import { Router } from 'express';
 import { db } from '../lib/db';
+import { emailQueue } from '../queues/emailQueue';
 import { injectSiteScope } from '../middleware/siteScope';
 import { requireRole } from '../middleware/auth';
 import { getSiteId, toPagination } from '../utils/request';
 
 const router = Router({ mergeParams: true });
 router.use(injectSiteScope);
+
+const queueOrderEmail = async (input: { siteId: string; orderId: string; type: 'order_confirmation' | 'order_shipped' | 'order_delivered' }) => {
+  const order = await db.orders.findFirst({
+    where: { site_id: input.siteId, id: input.orderId },
+    include: { items: true, site: true }
+  });
+  if (!order?.customer_id) return;
+  const customer = await db.customers.findFirst({ where: { site_id: input.siteId, id: order.customer_id } });
+  if (!customer?.email) return;
+  await emailQueue.add(input.type, {
+    site_id: input.siteId,
+    to: customer.email,
+    order_number: order.order_number,
+    total: Number(order.total).toFixed(2),
+    status: order.status
+  });
+};
 
 router.get('/', async (req, res) => {
   const siteId = getSiteId(req);
@@ -49,6 +67,13 @@ router.put('/:id/status', requireRole('super_admin', 'site_admin'), async (req, 
   const result = await db.orders.updateMany({ where: { site_id: siteId, id: req.params.id }, data: { status: status as any } });
   if (result.count === 0) return res.status(404).json({ ok: false, message: 'Order not found' });
   const order = await db.orders.findFirst({ where: { site_id: siteId, id: req.params.id } });
+  if (order) {
+    if (status === 'shipped') await queueOrderEmail({ siteId, orderId: order.id, type: 'order_shipped' });
+    if (status === 'delivered') await queueOrderEmail({ siteId, orderId: order.id, type: 'order_delivered' });
+    if (status === 'confirmed' && order.payment_status === 'paid') {
+      await queueOrderEmail({ siteId, orderId: order.id, type: 'order_confirmation' });
+    }
+  }
   return res.json({ ok: true, data: order });
 });
 

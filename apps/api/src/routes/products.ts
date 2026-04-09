@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import { z } from 'zod';
 import { db } from '../lib/db';
+import { cacheDel } from '../lib/cacheStore';
 import { injectSiteScope } from '../middleware/siteScope';
 import { requireRole } from '../middleware/auth';
 import { getSiteId, toPagination } from '../utils/request';
@@ -53,6 +54,7 @@ router.post('/', requireRole('super_admin', 'site_admin', 'editor'), async (req,
       ...parsed.data
     }
   } as any);
+  await cacheDel(`feed:gmc:${siteId}`);
   return res.status(201).json({ ok: true, data: product });
 });
 
@@ -71,6 +73,7 @@ router.put('/:id', requireRole('super_admin', 'site_admin', 'editor'), async (re
   if (!parsed.success) return res.status(400).json({ ok: false, message: 'Invalid payload', issues: parsed.error.issues });
   const result = await db.products.updateMany({ where: { site_id: siteId, id: req.params.id }, data: parsed.data as any });
   if (result.count === 0) return res.status(404).json({ ok: false, message: 'Product not found' });
+  await cacheDel(`feed:gmc:${siteId}`);
   const product = await db.products.findFirst({ where: { site_id: siteId, id: req.params.id } });
   return res.json({ ok: true, data: product });
 });
@@ -83,6 +86,7 @@ router.delete('/:id', requireRole('super_admin', 'site_admin', 'editor'), async 
     data: { is_deleted: true, status: 'inactive' }
   });
   if (result.count === 0) return res.status(404).json({ ok: false, message: 'Product not found' });
+  await cacheDel(`feed:gmc:${siteId}`);
   return res.json({ ok: true });
 });
 
@@ -98,6 +102,7 @@ router.post('/bulk', requireRole('super_admin', 'site_admin', 'editor'), async (
     await db.products.create({ data: { site_id: siteId, ...parsed.data } as any });
     created += 1;
   }
+  await cacheDel(`feed:gmc:${siteId}`);
   return res.status(201).json({ ok: true, data: { created, received: items.length } });
 });
 

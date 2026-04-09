@@ -140,7 +140,21 @@ export const runSeoMonthlyReport = async (siteId: string) => {
     }
   });
 
-  await emailQueue.add('seo-monthly-report', { siteId, report });
+  const recipients = await db.users.findMany({
+    where: {
+      role: { in: ['super_admin', 'site_admin'] },
+      is_active: true,
+      OR: [
+        { role: 'super_admin' },
+        { access: { some: { site_id: siteId } } }
+      ]
+    },
+    select: { email: true },
+    take: 10
+  });
+  for (const recipient of recipients) {
+    await emailQueue.add('weekly_seo_report', { site_id: siteId, to: recipient.email, summary: JSON.stringify(report) });
+  }
   return { type: 'monthly', report };
 };
 

@@ -19,10 +19,10 @@ Status legend: **Done** = implemented in codebase, **Partial** = scaffolded/inco
 | 12 | 13 (Public Next.js sites) | Partial | `/home/runner/work/ecom-system/ecom-system/apps/site-demo` |
 | 13 | 15 (Deployment workflow) | Partial | `/home/runner/work/ecom-system/ecom-system/scripts/new-site.sh`, `/home/runner/work/ecom-system/ecom-system/scripts/deploy-site.sh` |
 | 14 | 16 (Monitoring + CI/CD) | Done | `/home/runner/work/ecom-system/ecom-system/.github/workflows/ci.yml`, `/home/runner/work/ecom-system/ecom-system/.github/workflows/lighthouse.yml`, `/home/runner/work/ecom-system/ecom-system/apps/site-demo/.lighthouserc.js`, `/home/runner/work/ecom-system/ecom-system/monitoring/uptime-kuma/monitors.template.json`, `/home/runner/work/ecom-system/ecom-system/apps/api/src/services/monitoring/sentry.ts`, `/home/runner/work/ecom-system/ecom-system/apps/api/src/services/monitoring/gsc.ts`, `/home/runner/work/ecom-system/ecom-system/apps/api/src/workers/gscWorker.ts`, `/home/runner/work/ecom-system/ecom-system/apps/*/sentry*.ts` |
-| 15 | 17–18 (Merchant feed + email) | Partial | `/home/runner/work/ecom-system/ecom-system/apps/api/src/routes/feed/googleMerchant.ts`, `/home/runner/work/ecom-system/ecom-system/apps/api/src/services/emailService.ts`, `/home/runner/work/ecom-system/ecom-system/apps/api/src/queues/emailQueue.ts` |
-| 16 | 19 (security finalization) | Partial | `/home/runner/work/ecom-system/ecom-system/apps/api/src/middleware/auth.ts`, `/home/runner/work/ecom-system/ecom-system/apps/api/src/middleware/rateLimit.ts`, `/home/runner/work/ecom-system/ecom-system/apps/api/src/services/startupAudit.ts` |
-| 17 | 20 (pre-launch checklist) | Missing | No full pre-launch evidence checklist artifact yet |
-| 18 | Cross-cutting regression/sign-off | Partial | Root validation commands available via `/home/runner/work/ecom-system/ecom-system/package.json` scripts |
+| 15 | 17–18 (Merchant feed + email) | Done | `/home/runner/work/ecom-system/ecom-system/apps/api/src/routes/feed/googleMerchant.ts`, `/home/runner/work/ecom-system/ecom-system/apps/api/src/services/emailService.ts`, `/home/runner/work/ecom-system/ecom-system/apps/api/src/queues/emailQueue.ts`, `/home/runner/work/ecom-system/ecom-system/apps/api/src/workers/emailWorker.ts`, `/home/runner/work/ecom-system/ecom-system/packages/db/prisma/schema.prisma` (`email_logs`) |
+| 16 | 19 (security finalization) | Done | `/home/runner/work/ecom-system/ecom-system/apps/api/src/routes/auth.ts`, `/home/runner/work/ecom-system/ecom-system/apps/api/src/lib/cacheStore.ts`, `/home/runner/work/ecom-system/ecom-system/apps/api/src/index.ts` (strict CORS), `/home/runner/work/ecom-system/ecom-system/apps/api/src/middleware/activityLogger.ts`, `/home/runner/work/ecom-system/ecom-system/packages/db/prisma/schema.prisma` (`admin_activity_logs`) |
+| 17 | 20 (pre-launch checklist) | Done | `/home/runner/work/ecom-system/ecom-system/PRE-LAUNCH-CHECKLIST.md`, `/home/runner/work/ecom-system/ecom-system/apps/api/src/routes/prelaunch.ts` |
+| 18 | Cross-cutting regression/sign-off | Done | Root validation commands available via `/home/runner/work/ecom-system/ecom-system/package.json` scripts, plus current implementation verification run |
 
 ## Phase 1 implementation delivered in this change
 
@@ -62,3 +62,22 @@ Status legend: **Done** = implemented in codebase, **Partial** = scaffolded/inco
   - API runtime init + error middleware + failed AI job capture.
   - Next apps instrumentation files and Sentry config files.
 - Added Google Search Console integration service with OAuth refresh-token flow, route-backed reporting, and 6-hour cron sync worker.
+
+## Phases 15–18 delivered in this change
+
+- **Part 17 (Google Merchant feed)**:
+  - Upgraded endpoint to XML output with required GMC fields and shipping blocks.
+  - Added 1-hour cache support and product-change cache invalidation.
+- **Part 18 (Email system)**:
+  - Implemented typed transactional email templates with site branding and SMTP config from `sites.config`.
+  - Added queue processing with BullMQ when Redis is present and in-memory fallback otherwise.
+  - Added DB email logging (`email_logs`) including failure reasons.
+  - Wired order lifecycle email triggers for confirmation/shipped/delivered.
+- **Part 19 (Security finalization)**:
+  - Added strict origin allowlist CORS handling.
+  - Added login lockout (5 failed attempts => 15-minute lockout).
+  - Added refresh token storage/invalidation flow using shared cache store (Redis-backed when configured).
+  - Enforced mandatory 2FA for `super_admin`.
+  - Added admin write-action logging into `admin_activity_logs`.
+- **Part 20 (Pre-launch checklist)**:
+  - Added full checklist artifact and API evidence endpoint for per-site launch readiness status.
