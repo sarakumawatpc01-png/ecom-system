@@ -19,13 +19,26 @@ const allowedExtensions = new Set(['jpg', 'jpeg', 'png', 'webp', 'gif', 'svg', '
 const allowedMimePrefixes = ['image/', 'video/'];
 const allowedMimeExact = new Set(['application/pdf']);
 const sanitizeSegment = (value: string) => value.replace(/[^a-zA-Z0-9-_]/g, '');
-const privateIpPattern =
-  /^(localhost|127\.|0\.0\.0\.0|10\.|172\.(1[6-9]|2\d|3[0-1])\.|192\.168\.|169\.254\.|::1$|fc00:|fd00:)/i;
+const isPrivateHost = (host: string) => {
+  const normalized = host.trim().toLowerCase().replace(/^\[|\]$/g, '');
+  if (normalized === 'localhost' || normalized === '0.0.0.0' || normalized === '::1') return true;
+  if (/^127\.\d{1,3}\.\d{1,3}\.\d{1,3}$/.test(normalized)) return true;
+  if (/^10\.\d{1,3}\.\d{1,3}\.\d{1,3}$/.test(normalized)) return true;
+  if (/^192\.168\.\d{1,3}\.\d{1,3}$/.test(normalized)) return true;
+  if (/^169\.254\.\d{1,3}\.\d{1,3}$/.test(normalized)) return true;
+  const seg172 = normalized.match(/^172\.(\d{1,3})\.\d{1,3}\.\d{1,3}$/);
+  if (seg172) {
+    const secondOctet = Number(seg172[1]);
+    if (secondOctet >= 16 && secondOctet <= 31) return true;
+  }
+  if (normalized.startsWith('fc') || normalized.startsWith('fd')) return true;
+  return false;
+};
 const isSafeUrl = (value: string) => {
   try {
     const url = new URL(value);
     if (!['http:', 'https:'].includes(url.protocol)) return false;
-    if (privateIpPattern.test(url.hostname)) return false;
+    if (isPrivateHost(url.hostname)) return false;
     return true;
   } catch {
     return false;
@@ -77,7 +90,8 @@ export const saveUploadedMedia = async (input: {
 
   if (input.contentBase64) {
     sourceBuffer = Buffer.from(input.contentBase64, 'base64');
-  } else if (input.sourceUrl && isSafeUrl(input.sourceUrl)) {
+  } else if (input.sourceUrl) {
+    if (!isSafeUrl(input.sourceUrl)) throw new Error('Unsafe or invalid sourceUrl');
     const remote = await fetchRemoteBuffer(input.sourceUrl);
     sourceBuffer = remote.buffer;
     mimeType = mimeType || remote.contentType;
