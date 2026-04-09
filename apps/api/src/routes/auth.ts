@@ -2,7 +2,7 @@ import { Router } from 'express';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import { z } from 'zod';
-import { db } from '@ecom/db';
+import { db } from '../lib/db';
 import { JwtClaims, UserRole } from '../types';
 
 const router = Router();
@@ -16,7 +16,7 @@ const getSecret = () => process.env.JWT_SECRET || 'dev-secret-change-me';
 const getUserClaims = async (userId: string, role: string): Promise<JwtClaims> => {
   const accessRows = await db.user_site_access.findMany({ where: { user_id: userId }, select: { site_id: true } });
   const safeRole: UserRole = allowedRoles.includes(role as UserRole) ? (role as UserRole) : 'viewer';
-  return { sub: userId, role: safeRole, sites: accessRows.map((row) => row.site_id), iat: 0, exp: 0 };
+  return { sub: userId, role: safeRole, sites: accessRows.map((row: { site_id: string }) => row.site_id), iat: 0, exp: 0 };
 };
 
 const issueTokens = (claims: Omit<JwtClaims, 'iat' | 'exp'>) => {
@@ -109,7 +109,7 @@ router.get('/me', async (req, res) => {
         email: user.email,
         role: user.role,
         totp_enabled: user.totp_enabled,
-        sites: accessRows.map((row) => row.site_id)
+        sites: accessRows.map((row: { site_id: string }) => row.site_id)
       }
     });
   } catch {

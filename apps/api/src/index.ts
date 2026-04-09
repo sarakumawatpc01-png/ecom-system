@@ -30,7 +30,7 @@ import heatmapsRoutes from './routes/heatmaps';
 import notificationsRoutes from './routes/notifications';
 import feedRoutes from './routes/feed/googleMerchant';
 import infraRoutes from './routes/infra';
-import { db } from '@ecom/db';
+import { db } from './lib/db';
 import { authenticate } from './middleware/auth';
 import { apiRateLimit } from './middleware/rateLimit';
 import { errorHandler, notFoundHandler } from './middleware/errorHandler';

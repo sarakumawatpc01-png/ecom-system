@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { db } from '@ecom/db';
+import { db } from '../lib/db';
 import { injectSiteScope } from '../middleware/siteScope';
 import { getSiteId, toPagination } from '../utils/request';
 

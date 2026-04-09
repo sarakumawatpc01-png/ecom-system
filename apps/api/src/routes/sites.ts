@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import { z } from 'zod';
-import { db } from '@ecom/db';
+import { db } from '../lib/db';
 import { requireRole } from '../middleware/auth';
 import { toPagination } from '../utils/request';
 
