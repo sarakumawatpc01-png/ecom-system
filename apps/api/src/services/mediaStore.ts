@@ -18,6 +18,7 @@ export type StoredMedia = {
 const allowedExtensions = new Set(['jpg', 'jpeg', 'png', 'webp', 'gif', 'svg', 'mp4', 'webm', 'pdf']);
 const allowedMimePrefixes = ['image/', 'video/'];
 const allowedMimeExact = new Set(['application/pdf']);
+const MAX_MEDIA_BYTES = Number(process.env.MAX_MEDIA_BYTES || 15 * 1024 * 1024);
 const sanitizeSegment = (value: string) => {
   if (value.includes('..')) throw new Error('Unsafe path segment');
   const stripped = value.replace(/[^a-zA-Z0-9-_]/g, '');
@@ -27,14 +28,18 @@ const isPrivateHost = (host: string) => {
   const trimmedHost = host.trim().toLowerCase();
   const normalized = trimmedHost.replace(/^\[|\]$/g, '');
   if (normalized === 'localhost' || normalized === '0.0.0.0' || normalized === '::1') return true;
-  if (/^127\.\d{1,3}\.\d{1,3}\.\d{1,3}$/.test(normalized)) return true;
-  if (/^10\.\d{1,3}\.\d{1,3}\.\d{1,3}$/.test(normalized)) return true;
-  if (/^192\.168\.\d{1,3}\.\d{1,3}$/.test(normalized)) return true;
-  if (/^169\.254\.\d{1,3}\.\d{1,3}$/.test(normalized)) return true;
-  const seg172 = normalized.match(/^172\.(\d{1,3})\.\d{1,3}\.\d{1,3}$/);
-  if (seg172) {
-    const secondOctet = Number(seg172[1]);
-    if (secondOctet >= 16 && secondOctet <= 31) return true;
+  const ipv4 = normalized.match(/^(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})$/);
+  if (ipv4) {
+    const octets = ipv4.slice(1).map((part) => Number(part));
+    if (octets.some((value) => !Number.isInteger(value) || value < 0 || value > 255)) return false;
+    if (octets[0] === 127) return true;
+    if (octets[0] === 10) return true;
+    if (octets[0] === 192 && octets[1] === 168) return true;
+    if (octets[0] === 169 && octets[1] === 254) return true;
+    if (octets[0] === 172) {
+      const secondOctet = octets[1];
+      if (secondOctet >= 16 && secondOctet <= 31) return true;
+    }
   }
   if (normalized.startsWith('fc') || normalized.startsWith('fd')) return true;
   return false;
@@ -73,10 +78,37 @@ const validateMimeType = (mimeType: string) => {
   throw new Error(`Unsupported media mime type: ${mimeType}`);
 };
 
+const ensureWithinSizeLimit = (size: number) => {
+  if (size > MAX_MEDIA_BYTES) throw new Error(`Media payload exceeds ${MAX_MEDIA_BYTES} bytes`);
+};
+
+const hasPrefix = (buffer: Buffer, signature: number[]) =>
+  signature.length <= buffer.length && signature.every((value, index) => buffer[index] === value);
+
+const looksLikeSvg = (buffer: Buffer) => {
+  const sample = buffer.slice(0, 512).toString('utf8').trimStart().toLowerCase();
+  return sample.startsWith('<svg') || sample.startsWith('<?xml');
+};
+
+const validateBufferSignature = (mimeType: string, buffer: Buffer) => {
+  if (mimeType === 'application/pdf' && hasPrefix(buffer, [0x25, 0x50, 0x44, 0x46])) return;
+  if (mimeType === 'image/jpeg' && hasPrefix(buffer, [0xff, 0xd8, 0xff])) return;
+  if (mimeType === 'image/png' && hasPrefix(buffer, [0x89, 0x50, 0x4e, 0x47])) return;
+  if (mimeType === 'image/webp' && buffer.length >= 12 && buffer.toString('ascii', 8, 12) === 'WEBP') return;
+  if (mimeType === 'image/gif' && (buffer.toString('ascii', 0, 6) === 'GIF87a' || buffer.toString('ascii', 0, 6) === 'GIF89a')) return;
+  if (mimeType === 'image/svg+xml' && looksLikeSvg(buffer)) return;
+  if (mimeType === 'video/mp4' && buffer.length >= 12 && buffer.toString('ascii', 4, 8) === 'ftyp') return;
+  if (mimeType === 'video/webm' && hasPrefix(buffer, [0x1a, 0x45, 0xdf, 0xa3])) return;
+  throw new Error(`Media content signature mismatch for mime type: ${mimeType}`);
+};
+
 const fetchRemoteBuffer = async (url: string) => {
   const response = await fetch(url);
   if (!response.ok) throw new Error(`Failed to download remote media: ${response.status}`);
+  const contentLength = Number(response.headers.get('content-length') || 0);
+  if (Number.isFinite(contentLength) && contentLength > 0) ensureWithinSizeLimit(contentLength);
   const arrayBuffer = await response.arrayBuffer();
+  ensureWithinSizeLimit(arrayBuffer.byteLength);
   const contentType = response.headers.get('content-type') || 'application/octet-stream';
   return { buffer: Buffer.from(arrayBuffer), contentType };
 };
@@ -95,6 +127,7 @@ export const saveUploadedMedia = async (input: {
 
   if (input.contentBase64) {
     sourceBuffer = Buffer.from(input.contentBase64, 'base64');
+    ensureWithinSizeLimit(sourceBuffer.length);
   } else if (input.sourceUrl) {
     if (!isSafeUrl(input.sourceUrl)) throw new Error('Unsafe or invalid sourceUrl');
     const remote = await fetchRemoteBuffer(input.sourceUrl);
@@ -106,6 +139,8 @@ export const saveUploadedMedia = async (input: {
 
   const processed = await maybeConvertImage(mimeType, sourceBuffer);
   validateMimeType(processed.mimeType);
+  ensureWithinSizeLimit(processed.buffer.length);
+  validateBufferSignature(processed.mimeType, processed.buffer);
   const ext = processed.mimeType === 'image/webp' ? 'webp' : getAllowedExtension(input.filename);
   const objectName = fileObject(input.siteId, id, ext);
   await putObjectBuffer(objectName, processed.buffer, processed.mimeType);
