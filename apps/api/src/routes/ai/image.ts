@@ -59,7 +59,7 @@ router.post('/generate', async (req, res) => {
     });
     await db.ai_jobs.update({
       where: { id: job.id },
-      data: { status: 'completed', output_payload: { media, provider_output: generated.raw } }
+      data: { status: 'completed', output_payload: ({ media, provider_output: generated.raw } as any) }
     });
     return res.status(201).json({ ok: true, data: { job_id: job.id, media } });
   } catch (error) {

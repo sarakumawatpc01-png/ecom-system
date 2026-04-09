@@ -52,7 +52,7 @@ const queueAndRunRewrite = async (siteId: string, taskType: string, entityId: st
       taskType,
       settings: (config.settings as Record<string, unknown>) || {}
     });
-    await db.ai_jobs.update({ where: { id: job.id }, data: { status: 'completed', output_payload: output } });
+    await db.ai_jobs.update({ where: { id: job.id }, data: { status: 'completed', output_payload: output as any } });
   } catch (error) {
     await db.ai_jobs.update({
       where: { id: job.id },

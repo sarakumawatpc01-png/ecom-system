@@ -2,6 +2,7 @@ import { Router } from 'express';
 import { z } from 'zod';
 import { db } from '../lib/db';
 import { injectSiteScope } from '../middleware/siteScope';
+import { requireRole } from '../middleware/auth';
 import { getSiteId, toPagination } from '../utils/request';
 
 const router = Router({ mergeParams: true });
@@ -19,7 +20,7 @@ const productSchema = z.object({
   cost_price: z.coerce.number().nonnegative().optional().nullable(),
   currency: z.string().min(3).max(3).optional(),
   stock_qty: z.number().int().optional(),
-  status: z.string().optional(),
+  status: z.enum(['draft', 'active', 'inactive', 'out_of_stock']).optional(),
   seo_title: z.string().optional(),
   seo_description: z.string().optional(),
   seo_keywords: z.string().optional()
@@ -41,7 +42,7 @@ router.get('/', async (req, res) => {
   return res.json({ ok: true, data: { items, total } });
 });
 
-router.post('/', async (req, res) => {
+router.post('/', requireRole('super_admin', 'site_admin', 'editor'), async (req, res) => {
   const siteId = getSiteId(req);
   if (!siteId) return res.status(400).json({ ok: false, message: 'Missing site scope' });
   const parsed = productSchema.safeParse(req.body);
@@ -51,7 +52,7 @@ router.post('/', async (req, res) => {
       site_id: siteId,
       ...parsed.data
     }
-  });
+  } as any);
   return res.status(201).json({ ok: true, data: product });
 });
 
@@ -63,29 +64,29 @@ router.get('/:slug', async (req, res) => {
   return res.json({ ok: true, data: product });
 });
 
-router.put('/:id', async (req, res) => {
+router.put('/:id', requireRole('super_admin', 'site_admin', 'editor'), async (req, res) => {
   const siteId = getSiteId(req);
   if (!siteId) return res.status(400).json({ ok: false, message: 'Missing site scope' });
   const parsed = productSchema.partial().safeParse(req.body || {});
   if (!parsed.success) return res.status(400).json({ ok: false, message: 'Invalid payload', issues: parsed.error.issues });
-  const result = await db.products.updateMany({ where: { site_id: siteId, id: req.params.id }, data: parsed.data });
+  const result = await db.products.updateMany({ where: { site_id: siteId, id: req.params.id }, data: parsed.data as any });
   if (result.count === 0) return res.status(404).json({ ok: false, message: 'Product not found' });
   const product = await db.products.findFirst({ where: { site_id: siteId, id: req.params.id } });
   return res.json({ ok: true, data: product });
 });
 
-router.delete('/:id', async (req, res) => {
+router.delete('/:id', requireRole('super_admin', 'site_admin', 'editor'), async (req, res) => {
   const siteId = getSiteId(req);
   if (!siteId) return res.status(400).json({ ok: false, message: 'Missing site scope' });
   const result = await db.products.updateMany({
     where: { site_id: siteId, id: req.params.id },
-    data: { is_deleted: true, status: 'archived' }
+    data: { is_deleted: true, status: 'inactive' }
   });
   if (result.count === 0) return res.status(404).json({ ok: false, message: 'Product not found' });
   return res.json({ ok: true });
 });
 
-router.post('/bulk', async (req, res) => {
+router.post('/bulk', requireRole('super_admin', 'site_admin', 'editor'), async (req, res) => {
   const siteId = getSiteId(req);
   const items = Array.isArray(req.body?.items) ? req.body.items : [];
   if (!siteId) return res.status(400).json({ ok: false, message: 'Missing site scope' });
@@ -94,7 +95,7 @@ router.post('/bulk', async (req, res) => {
   for (const item of items) {
     const parsed = productSchema.safeParse(item);
     if (!parsed.success) continue;
-    await db.products.create({ data: { site_id: siteId, ...parsed.data } });
+    await db.products.create({ data: { site_id: siteId, ...parsed.data } as any });
     created += 1;
   }
   return res.status(201).json({ ok: true, data: { created, received: items.length } });
@@ -110,7 +111,7 @@ router.get('/:id/images', async (req, res) => {
   return res.json({ ok: true, data: items });
 });
 
-router.post('/:id/images', async (req, res) => {
+router.post('/:id/images', requireRole('super_admin', 'site_admin', 'editor'), async (req, res) => {
   const siteId = getSiteId(req);
   const url = String(req.body?.url || '');
   if (!siteId) return res.status(400).json({ ok: false, message: 'Missing site scope' });
@@ -126,7 +127,7 @@ router.post('/:id/images', async (req, res) => {
   return res.status(201).json({ ok: true, data: image });
 });
 
-router.delete('/:id/images/:imageId', async (req, res) => {
+router.delete('/:id/images/:imageId', requireRole('super_admin', 'site_admin', 'editor'), async (req, res) => {
   const siteId = getSiteId(req);
   if (!siteId) return res.status(400).json({ ok: false, message: 'Missing site scope' });
   const result = await db.product_images.deleteMany({
@@ -136,7 +137,7 @@ router.delete('/:id/images/:imageId', async (req, res) => {
   return res.json({ ok: true });
 });
 
-router.post('/:id/videos', async (req, res) => {
+router.post('/:id/videos', requireRole('super_admin', 'site_admin', 'editor'), async (req, res) => {
   const siteId = getSiteId(req);
   const url = String(req.body?.url || '');
   if (!siteId) return res.status(400).json({ ok: false, message: 'Missing site scope' });
@@ -159,7 +160,7 @@ router.get('/:id/variants', async (req, res) => {
   return res.json({ ok: true, data: items });
 });
 
-router.post('/:id/variants', async (req, res) => {
+router.post('/:id/variants', requireRole('super_admin', 'site_admin', 'editor'), async (req, res) => {
   const siteId = getSiteId(req);
   if (!siteId) return res.status(400).json({ ok: false, message: 'Missing site scope' });
   const name = String(req.body?.name || '');

@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import { db } from '../lib/db';
 import { injectSiteScope } from '../middleware/siteScope';
+import { requireRole } from '../middleware/auth';
 import { getSiteId, toPagination } from '../utils/request';
 
 const router = Router({ mergeParams: true });
@@ -38,23 +39,25 @@ router.get('/:id', async (req, res) => {
   return res.json({ ok: true, data: order });
 });
 
-router.put('/:id/status', async (req, res) => {
+router.put('/:id/status', requireRole('super_admin', 'site_admin'), async (req, res) => {
   const siteId = getSiteId(req);
   const status = String(req.body?.status || '');
+  const allowedStatuses = ['pending', 'confirmed', 'processing', 'shipped', 'delivered', 'cancelled', 'refunded'];
   if (!siteId) return res.status(400).json({ ok: false, message: 'Missing site scope' });
   if (!status) return res.status(400).json({ ok: false, message: 'status is required' });
-  const result = await db.orders.updateMany({ where: { site_id: siteId, id: req.params.id }, data: { status } });
+  if (!allowedStatuses.includes(status)) return res.status(400).json({ ok: false, message: 'Invalid status' });
+  const result = await db.orders.updateMany({ where: { site_id: siteId, id: req.params.id }, data: { status: status as any } });
   if (result.count === 0) return res.status(404).json({ ok: false, message: 'Order not found' });
   const order = await db.orders.findFirst({ where: { site_id: siteId, id: req.params.id } });
   return res.json({ ok: true, data: order });
 });
 
-router.post('/:id/refund', async (req, res) => {
+router.post('/:id/refund', requireRole('super_admin', 'site_admin'), async (req, res) => {
   const siteId = getSiteId(req);
   if (!siteId) return res.status(400).json({ ok: false, message: 'Missing site scope' });
   const result = await db.orders.updateMany({
     where: { site_id: siteId, id: req.params.id },
-    data: { payment_status: 'refunded', status: req.body?.status ? String(req.body.status) : 'refunded' }
+    data: { payment_status: 'refunded', status: (req.body?.status ? String(req.body.status) : 'refunded') as any }
   });
   if (result.count === 0) return res.status(404).json({ ok: false, message: 'Order not found' });
   return res.json({ ok: true, data: { refunded: true } });

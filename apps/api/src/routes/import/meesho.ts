@@ -22,7 +22,7 @@ router.post('/url', async (req, res) => {
     data: {
       site_id: siteId,
       source_url: parsed.data.source_url,
-      status: 'running',
+      status: 'processing',
       started_at: new Date()
     }
   });
@@ -31,10 +31,10 @@ router.post('/url', async (req, res) => {
     const imported = Array.isArray(result.products) ? result.products.length : 0;
     await db.meesho_import_log.update({
       where: { id: log.id },
-      data: {
-        status: 'completed',
-        products_found: imported,
-        products_imported: imported,
+        data: {
+          status: 'done',
+          products_found: imported,
+          products_imported: imported,
         completed_at: new Date()
       }
     });

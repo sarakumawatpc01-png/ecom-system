@@ -39,7 +39,7 @@ router.post('/', async (req, res) => {
       tags: parsed.data.tags || [],
       metadata: parsed.data.metadata || {}
     }
-  });
+  } as any);
   return res.status(201).json({ ok: true, data: customer });
 });
 
@@ -56,7 +56,7 @@ router.put('/:id', async (req, res) => {
   if (!siteId) return res.status(400).json({ ok: false, message: 'Missing site scope' });
   const parsed = customerSchema.partial().safeParse(req.body || {});
   if (!parsed.success) return res.status(400).json({ ok: false, message: 'Invalid payload', issues: parsed.error.issues });
-  const result = await db.customers.updateMany({ where: { site_id: siteId, id: req.params.id }, data: parsed.data });
+  const result = await db.customers.updateMany({ where: { site_id: siteId, id: req.params.id }, data: parsed.data as any });
   if (result.count === 0) return res.status(404).json({ ok: false, message: 'Customer not found' });
   const customer = await db.customers.findFirst({ where: { site_id: siteId, id: req.params.id } });
   return res.json({ ok: true, data: customer });

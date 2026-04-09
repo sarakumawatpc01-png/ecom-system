@@ -46,7 +46,7 @@ router.post('/', async (req, res) => {
       api_key_encrypted: encrypted,
       is_active: parsed.data.is_active ?? true,
       priority: parsed.data.priority ?? 1,
-      settings: parsed.data.settings || {}
+      settings: (parsed.data.settings || {}) as any
     }
   });
   return res.status(201).json({ ok: true, data: { ...item, api_key_encrypted: undefined, has_api_key: true } });
@@ -55,7 +55,7 @@ router.post('/', async (req, res) => {
 router.put('/:id', async (req, res) => {
   const parsed = configSchema.partial().safeParse(req.body || {});
   if (!parsed.success) return res.status(400).json({ ok: false, message: 'Invalid payload', issues: parsed.error.issues });
-  const updateData: Record<string, unknown> = { ...parsed.data };
+  const updateData: Record<string, unknown> = { ...parsed.data } as any;
   if (parsed.data.api_key) {
     updateData.api_key_encrypted = encryptText(parsed.data.api_key, cryptoSecret);
     delete updateData.api_key;

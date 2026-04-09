@@ -30,7 +30,7 @@ router.post('/', async (req, res) => {
   if (!parsed.success) {
     return res.status(400).json({ ok: false, message: 'Invalid payload', issues: parsed.error.issues });
   }
-  const site = await db.sites.create({ data: { ...parsed.data, config: parsed.data.config || {} } });
+  const site = await db.sites.create({ data: { ...parsed.data, config: (parsed.data.config || {}) as any } });
   return res.status(201).json({ ok: true, data: site });
 });
 
@@ -47,21 +47,21 @@ router.put('/:id', async (req, res) => {
   if (!parsed.success) {
     return res.status(400).json({ ok: false, message: 'Invalid payload', issues: parsed.error.issues });
   }
-  const site = await db.sites.update({ where: { id: req.params.id }, data: parsed.data });
+  const site = await db.sites.update({ where: { id: req.params.id }, data: parsed.data as any });
   return res.json({ ok: true, data: site });
 });
 
 router.delete('/:id', async (req, res) => {
-  await db.sites.update({ where: { id: req.params.id }, data: { is_deleted: true, status: 'deleted' } });
+  await db.sites.update({ where: { id: req.params.id }, data: { is_deleted: true, status: 'disabled' } });
   return res.json({ ok: true });
 });
 
 router.put('/:id/status', async (req, res) => {
   const status = String(req.body?.status || '').trim();
-  if (!status) {
-    return res.status(400).json({ ok: false, message: 'status is required' });
+  if (!['active', 'maintenance', 'disabled'].includes(status)) {
+    return res.status(400).json({ ok: false, message: 'status must be one of: active, maintenance, disabled' });
   }
-  const site = await db.sites.update({ where: { id: req.params.id }, data: { status } });
+  const site = await db.sites.update({ where: { id: req.params.id }, data: { status: status as any } });
   return res.json({ ok: true, data: site });
 });
 

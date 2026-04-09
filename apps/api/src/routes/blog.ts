@@ -2,6 +2,7 @@ import { Router } from 'express';
 import { z } from 'zod';
 import { db } from '../lib/db';
 import { injectSiteScope } from '../middleware/siteScope';
+import { requireRole } from '../middleware/auth';
 import { getSiteId, toPagination } from '../utils/request';
 
 const router = Router({ mergeParams: true });
@@ -30,7 +31,7 @@ router.get('/', async (req, res) => {
   return res.json({ ok: true, data: { items, total } });
 });
 
-router.post('/', async (req, res) => {
+router.post('/', requireRole('super_admin', 'site_admin', 'editor'), async (req, res) => {
   const siteId = getSiteId(req);
   if (!siteId) return res.status(400).json({ ok: false, message: 'Missing site scope' });
   const parsed = blogSchema.safeParse(req.body || {});
@@ -53,7 +54,7 @@ router.get('/:id', async (req, res) => {
   return res.json({ ok: true, data: item });
 });
 
-router.put('/:id', async (req, res) => {
+router.put('/:id', requireRole('super_admin', 'site_admin', 'editor'), async (req, res) => {
   const siteId = getSiteId(req);
   if (!siteId) return res.status(400).json({ ok: false, message: 'Missing site scope' });
   const parsed = blogSchema.partial().safeParse(req.body || {});
@@ -68,7 +69,7 @@ router.put('/:id', async (req, res) => {
   return res.json({ ok: true, data: item });
 });
 
-router.delete('/:id', async (req, res) => {
+router.delete('/:id', requireRole('super_admin', 'site_admin', 'editor'), async (req, res) => {
   const siteId = getSiteId(req);
   if (!siteId) return res.status(400).json({ ok: false, message: 'Missing site scope' });
   const result = await db.blog_posts.deleteMany({ where: { site_id: siteId, id: req.params.id } });

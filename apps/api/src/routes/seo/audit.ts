@@ -17,8 +17,8 @@ router.get('/audit', async (req, res) => {
       page_url: String(req.query.page_url || '/'),
       page_type: String(req.query.page_type || 'site'),
       score: Number(audit.score || 0),
-      issues: (audit.issues as unknown[]) || [],
-      suggestions: ['Improve title uniqueness', 'Optimize meta descriptions'],
+      issues: (((audit.issues as unknown[]) || []) as any),
+      suggestions: (['Improve title uniqueness', 'Optimize meta descriptions'] as any),
       status: 'open'
     }
   });

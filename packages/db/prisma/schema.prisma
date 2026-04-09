@@ -7,42 +7,171 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+enum SiteStatus {
+  active
+  maintenance
+  disabled
+}
+
+enum UserRole {
+  super_admin
+  site_admin
+  editor
+  viewer
+}
+
+enum ProductStatus {
+  draft
+  active
+  inactive
+  out_of_stock
+}
+
+enum ProductSource {
+  manual
+  meesho
+  import
+}
+
+enum ReviewSource {
+  site
+  meesho
+  import
+}
+
+enum ReviewModerationStatus {
+  pending
+  approved
+  rejected
+}
+
+enum OrderStatus {
+  pending
+  confirmed
+  processing
+  shipped
+  delivered
+  cancelled
+  refunded
+}
+
+enum PaymentStatus {
+  pending
+  unpaid
+  paid
+  partial
+  refunded
+}
+
+enum BlogStatus {
+  draft
+  scheduled
+  published
+}
+
+enum AiJobStatus {
+  queued
+  running
+  processing
+  done
+  completed
+  failed
+  needs_approval
+  approved
+  rejected
+}
+
+enum AiProvider {
+  openrouter
+  deepseek
+  sarvam
+  claude
+  openai
+  google
+  anthropic
+}
+
+enum LandingPageStatus {
+  draft
+  active
+  archived
+}
+
+enum AbTestStatus {
+  draft
+  running
+  paused
+  completed
+}
+
+enum MeeshoImportStatus {
+  queued
+  pending
+  processing
+  done
+  failed
+}
+
+enum SeoSeverity {
+  critical
+  warning
+  info
+}
+
 model sites {
-  id                String   @id @default(uuid()) @db.Uuid
-  domain            String   @unique
+  id                String      @id @default(uuid()) @db.Uuid
+  domain            String      @unique
   name              String
-  slug              String   @unique
-  config            Json     @default("{}")
+  slug              String      @unique
+  config            Json        @default("{}")
   nginx_port        Int
   pm2_process_name  String
-  status            String   @default("active")
-  is_deleted        Boolean  @default(false)
-  created_at        DateTime @default(now())
-  updated_at        DateTime @updatedAt
+  status            SiteStatus  @default(active)
+  is_deleted        Boolean     @default(false)
+  created_at        DateTime    @default(now())
+  updated_at        DateTime    @updatedAt
   categories        categories[]
   products          products[]
+  product_images    product_images[]
+  product_variants  product_variants[]
+  product_videos    product_videos[]
   users_access      user_site_access[]
   orders            orders[]
   customers         customers[]
   blog_posts        blog_posts[]
   redirects         redirects[]
   ai_jobs           ai_jobs[]
+  ai_model_configs  ai_model_config[]
   landing_pages     landing_pages[]
   ab_tests          ab_tests[]
   meesho_import_log meesho_import_log[]
   seo_audit_results seo_audit_results[]
+  reviews           reviews[]
+  review_images     review_images[]
+  heatmap_events    heatmap_events[]
+
+  @@index([status])
+  @@index([is_deleted])
 }
 
 model users {
-  id            String   @id @default(uuid()) @db.Uuid
-  email         String   @unique
+  id            String             @id @default(uuid()) @db.Uuid
+  email         String             @unique
   password_hash String
-  role          String
-  is_active     Boolean  @default(true)
-  totp_enabled  Boolean  @default(false)
-  created_at    DateTime @default(now())
-  updated_at    DateTime @updatedAt
+  name          String             @default("User")
+  role          UserRole
+  is_active     Boolean            @default(true)
+  totp_secret   String?
+  totp_enabled  Boolean            @default(false)
+  last_login    DateTime?
+  created_at    DateTime           @default(now())
+  updated_at    DateTime           @updatedAt
   access        user_site_access[]
+  approved_jobs ai_jobs[]          @relation("ai_jobs_approved_by")
+  authored_blog blog_posts[]
+
+  @@index([role])
+  @@index([is_active])
 }
 
 model user_site_access {
@@ -54,68 +183,110 @@ model user_site_access {
   sites      sites    @relation(fields: [site_id], references: [id], onDelete: Cascade)
 
   @@unique([user_id, site_id])
+  @@index([site_id])
 }
 
 model categories {
-  id          String   @id @default(uuid()) @db.Uuid
-  site_id     String   @db.Uuid
-  parent_id   String?  @db.Uuid
+  id          String       @id @default(uuid()) @db.Uuid
+  site_id     String       @db.Uuid
+  parent_id   String?      @db.Uuid
   name        String
   slug        String
   description String?
   image_url   String?
-  sort_order  Int      @default(0)
-  is_active   Boolean  @default(true)
-  created_at  DateTime @default(now())
-  updated_at  DateTime @updatedAt
-  site        sites    @relation(fields: [site_id], references: [id], onDelete: Cascade)
+  meta_title  String?
+  meta_desc   String?
+  sort_order  Int          @default(0)
+  is_active   Boolean      @default(true)
+  created_at  DateTime     @default(now())
+  updated_at  DateTime     @updatedAt
+  site        sites        @relation(fields: [site_id], references: [id], onDelete: Cascade)
+  parent      categories?  @relation("category_tree", fields: [parent_id], references: [id], onDelete: SetNull)
+  children    categories[] @relation("category_tree")
   products    products[]
 
   @@unique([site_id, slug])
+  @@index([site_id, is_active])
+  @@index([site_id, parent_id])
 }
 
 model products {
-  id                String   @id @default(uuid()) @db.Uuid
-  site_id           String   @db.Uuid
-  category_id       String?  @db.Uuid
-  name              String
-  slug              String
-  description       String?
-  short_description String?
-  sku               String?
-  price             Decimal  @db.Decimal(10, 2)
-  compare_at_price  Decimal? @db.Decimal(10, 2)
-  cost_price        Decimal? @db.Decimal(10, 2)
-  currency          String   @default("INR")
-  stock_qty         Int      @default(0)
-  status            String   @default("draft")
-  seo_title         String?
-  seo_description   String?
-  seo_keywords      String?
-  ai_status         String   @default("pending")
-  is_deleted        Boolean  @default(false)
-  created_at        DateTime @default(now())
-  updated_at        DateTime @updatedAt
-  site              sites    @relation(fields: [site_id], references: [id], onDelete: Cascade)
-  category          categories? @relation(fields: [category_id], references: [id], onDelete: SetNull)
-  images            product_images[]
-  variants          product_variants[]
-  videos            product_videos[]
-  reviews           reviews[]
-  order_items       order_items[]
+  id                    String        @id @default(uuid()) @db.Uuid
+  site_id               String        @db.Uuid
+  category_id           String?       @db.Uuid
+  name                  String
+  slug                  String
+  original_name         String?
+  description           String?
+  original_description  String?
+  short_description     String?
+  sku                   String?
+  mpn                   String?
+  brand                 String?
+  price                 Decimal       @db.Decimal(10, 2)
+  compare_at_price      Decimal?      @db.Decimal(10, 2)
+  compare_price         Decimal?      @db.Decimal(10, 2)
+  cost_price            Decimal?      @db.Decimal(10, 2)
+  currency              String        @default("INR")
+  stock_qty             Int           @default(0)
+  stock_quantity        Int           @default(0)
+  low_stock_threshold   Int           @default(5)
+  track_inventory       Boolean       @default(true)
+  status                ProductStatus @default(draft)
+  is_featured           Boolean       @default(false)
+  weight                Decimal?      @db.Decimal(8, 2)
+  dimensions            Json?
+  tags                  String[]      @default([])
+  seo_title             String?
+  seo_description       String?
+  seo_keywords          String?
+  meta_title            String?
+  meta_desc             String?
+  source                ProductSource @default(manual)
+  source_id             String?
+  source_url            String?
+  ai_status             String        @default("pending")
+  ai_description_status String        @default("pending")
+  ai_image_status       String        @default("pending")
+  gmc_category          String?
+  gtin                  String?
+  condition             String        @default("new")
+  is_deleted            Boolean       @default(false)
+  created_at            DateTime      @default(now())
+  updated_at            DateTime      @updatedAt
+  site                  sites         @relation(fields: [site_id], references: [id], onDelete: Cascade)
+  category              categories?   @relation(fields: [category_id], references: [id], onDelete: SetNull)
+  images                product_images[]
+  variants              product_variants[]
+  videos                product_videos[]
+  reviews               reviews[]
+  order_items           order_items[]
 
   @@unique([site_id, slug])
+  @@index([site_id, status])
+  @@index([site_id, is_deleted])
+  @@index([site_id, source])
+  @@index([site_id, created_at])
 }
 
 model product_images {
-  id         String   @id @default(uuid()) @db.Uuid
-  product_id String   @db.Uuid
-  site_id    String   @db.Uuid
-  url        String
-  alt_text   String?
-  sort_order Int      @default(0)
-  created_at DateTime @default(now())
-  product    products @relation(fields: [product_id], references: [id], onDelete: Cascade)
+  id           String   @id @default(uuid()) @db.Uuid
+  product_id   String   @db.Uuid
+  site_id      String   @db.Uuid
+  url          String
+  original_url String?
+  alt_text     String?
+  sort_order   Int      @default(0)
+  is_primary   Boolean  @default(false)
+  source       String   @default("manual")
+  width        Int?
+  height       Int?
+  created_at   DateTime @default(now())
+  product      products @relation(fields: [product_id], references: [id], onDelete: Cascade)
+  site         sites    @relation(fields: [site_id], references: [id], onDelete: Cascade)
+
+  @@index([product_id, sort_order])
+  @@index([site_id, source])
 }
 
 model product_variants {
@@ -126,119 +297,184 @@ model product_variants {
   sku        String?
   price      Decimal  @db.Decimal(10, 2)
   stock_qty  Int      @default(0)
+  stock      Int      @default(0)
+  options    Json     @default("{}")
+  image_url  String?
+  is_active  Boolean  @default(true)
   created_at DateTime @default(now())
   product    products @relation(fields: [product_id], references: [id], onDelete: Cascade)
+  site       sites    @relation(fields: [site_id], references: [id], onDelete: Cascade)
+
+  @@index([product_id])
+  @@index([site_id, is_active])
 }
 
 model product_videos {
-  id          String   @id @default(uuid()) @db.Uuid
-  product_id  String   @db.Uuid
-  site_id     String   @db.Uuid
-  url         String
-  provider    String?
-  duration_ms Int?
-  created_at  DateTime @default(now())
-  product     products @relation(fields: [product_id], references: [id], onDelete: Cascade)
+  id           String   @id @default(uuid()) @db.Uuid
+  product_id   String   @db.Uuid
+  site_id      String   @db.Uuid
+  url          String
+  provider     String?
+  thumbnail    String?
+  source       String   @default("manual")
+  duration_ms  Int?
+  duration_sec Int?
+  sort_order   Int      @default(0)
+  created_at   DateTime @default(now())
+  product      products @relation(fields: [product_id], references: [id], onDelete: Cascade)
+  site         sites    @relation(fields: [site_id], references: [id], onDelete: Cascade)
+
+  @@index([product_id, sort_order])
 }
 
 model reviews {
-  id           String   @id @default(uuid()) @db.Uuid
-  site_id      String   @db.Uuid
-  product_id   String   @db.Uuid
-  customer_id  String?  @db.Uuid
-  rating       Int
-  title        String?
-  content      String?
-  status       String   @default("pending")
-  is_flagged   Boolean  @default(false)
-  created_at   DateTime @default(now())
-  updated_at   DateTime @updatedAt
-  site         sites    @relation(fields: [site_id], references: [id], onDelete: Cascade)
-  product      products @relation(fields: [product_id], references: [id], onDelete: Cascade)
-  images       review_images[]
+  id               String                 @id @default(uuid()) @db.Uuid
+  site_id          String                 @db.Uuid
+  product_id       String                 @db.Uuid
+  customer_id      String?                @db.Uuid
+  author_name      String                 @default("Anonymous")
+  rating           Int
+  title            String?
+  content          String?
+  body             String?
+  original_body    String?
+  source           ReviewSource           @default(site)
+  source_id        String?
+  status           ReviewModerationStatus @default(pending)
+  is_approved      Boolean                @default(false)
+  is_verified      Boolean                @default(false)
+  contains_meesho  Boolean                @default(false)
+  helpful_count    Int                    @default(0)
+  is_flagged       Boolean                @default(false)
+  created_at       DateTime               @default(now())
+  approved_at      DateTime?
+  updated_at       DateTime               @updatedAt
+  site             sites                  @relation(fields: [site_id], references: [id], onDelete: Cascade)
+  product          products               @relation(fields: [product_id], references: [id], onDelete: Cascade)
+  images           review_images[]
+
+  @@index([site_id, status])
+  @@index([site_id, is_flagged])
+  @@index([site_id, contains_meesho])
+  @@index([product_id, created_at])
 }
 
 model review_images {
-  id         String   @id @default(uuid()) @db.Uuid
-  review_id  String   @db.Uuid
-  site_id    String   @db.Uuid
-  url        String
-  created_at DateTime @default(now())
-  review     reviews  @relation(fields: [review_id], references: [id], onDelete: Cascade)
+  id           String   @id @default(uuid()) @db.Uuid
+  review_id    String   @db.Uuid
+  site_id      String   @db.Uuid
+  url          String
+  original_url String?
+  created_at   DateTime @default(now())
+  review       reviews  @relation(fields: [review_id], references: [id], onDelete: Cascade)
+  site         sites    @relation(fields: [site_id], references: [id], onDelete: Cascade)
+
+  @@index([review_id])
 }
 
 model orders {
-  id                String   @id @default(uuid()) @db.Uuid
-  site_id           String   @db.Uuid
-  customer_id       String?  @db.Uuid
+  id                String        @id @default(uuid()) @db.Uuid
+  site_id           String        @db.Uuid
+  customer_id       String?       @db.Uuid
   order_number      String
-  status            String   @default("pending")
-  payment_status    String   @default("pending")
+  status            OrderStatus   @default(pending)
+  payment_status    PaymentStatus @default(pending)
+  payment_method    String?
   payment_provider  String?
-  subtotal          Decimal  @db.Decimal(10, 2)
-  tax               Decimal  @db.Decimal(10, 2) @default(0)
-  shipping          Decimal  @db.Decimal(10, 2) @default(0)
-  discount          Decimal  @db.Decimal(10, 2) @default(0)
-  total             Decimal  @db.Decimal(10, 2)
+  payment_gateway   String?
+  payment_id        String?
+  subtotal          Decimal       @db.Decimal(10, 2)
+  tax               Decimal       @db.Decimal(10, 2) @default(0)
+  shipping          Decimal       @db.Decimal(10, 2) @default(0)
+  discount          Decimal       @db.Decimal(10, 2) @default(0)
+  total             Decimal       @db.Decimal(10, 2)
+  currency          String        @default("INR")
   shipping_address  Json
   billing_address   Json
   notes             String?
-  created_at        DateTime @default(now())
-  updated_at        DateTime @updatedAt
-  site              sites    @relation(fields: [site_id], references: [id], onDelete: Cascade)
+  meta              Json?
+  created_at        DateTime      @default(now())
+  updated_at        DateTime      @updatedAt
+  site              sites         @relation(fields: [site_id], references: [id], onDelete: Cascade)
   items             order_items[]
 
   @@unique([site_id, order_number])
+  @@index([site_id, status])
+  @@index([site_id, payment_status])
+  @@index([site_id, created_at])
 }
 
 model order_items {
-  id          String   @id @default(uuid()) @db.Uuid
-  order_id    String   @db.Uuid
-  product_id  String?  @db.Uuid
-  variant_id  String?  @db.Uuid
+  id           String    @id @default(uuid()) @db.Uuid
+  order_id     String    @db.Uuid
+  product_id   String?   @db.Uuid
+  variant_id   String?   @db.Uuid
   product_name String
-  sku         String?
-  qty         Int
-  price       Decimal  @db.Decimal(10, 2)
-  total       Decimal  @db.Decimal(10, 2)
-  created_at  DateTime @default(now())
-  order       orders   @relation(fields: [order_id], references: [id], onDelete: Cascade)
-  product     products? @relation(fields: [product_id], references: [id], onDelete: SetNull)
+  name         String?
+  sku          String?
+  qty          Int
+  quantity     Int?
+  price        Decimal   @db.Decimal(10, 2)
+  total        Decimal   @db.Decimal(10, 2)
+  image_url    String?
+  created_at   DateTime  @default(now())
+  order        orders    @relation(fields: [order_id], references: [id], onDelete: Cascade)
+  product      products? @relation(fields: [product_id], references: [id], onDelete: SetNull)
+
+  @@index([order_id])
 }
 
 model customers {
-  id          String   @id @default(uuid()) @db.Uuid
-  site_id     String   @db.Uuid
-  email       String
-  phone       String?
-  first_name  String?
-  last_name   String?
-  tags        Json     @default("[]")
-  metadata    Json     @default("{}")
-  created_at  DateTime @default(now())
-  updated_at  DateTime @updatedAt
-  site        sites    @relation(fields: [site_id], references: [id], onDelete: Cascade)
+  id            String   @id @default(uuid()) @db.Uuid
+  site_id       String   @db.Uuid
+  email         String
+  phone         String?
+  first_name    String?
+  last_name     String?
+  name          String?
+  password_hash String?
+  is_guest      Boolean  @default(false)
+  total_orders  Int      @default(0)
+  total_spent   Decimal  @db.Decimal(10, 2) @default(0)
+  tags          Json     @default("[]")
+  metadata      Json     @default("{}")
+  meta          Json?
+  created_at    DateTime @default(now())
+  updated_at    DateTime @updatedAt
+  site          sites    @relation(fields: [site_id], references: [id], onDelete: Cascade)
 
   @@unique([site_id, email])
+  @@index([site_id, created_at])
 }
 
 model blog_posts {
-  id              String   @id @default(uuid()) @db.Uuid
-  site_id         String   @db.Uuid
+  id              String     @id @default(uuid()) @db.Uuid
+  site_id         String     @db.Uuid
+  author_id       String?    @db.Uuid
   title           String
   slug            String
   content         String
+  body            String?
   excerpt         String?
   featured_image  String?
+  hero_image_url  String?
   seo_title       String?
   seo_description String?
-  status          String   @default("draft")
+  meta_title      String?
+  meta_desc       String?
+  tags            String[]   @default([])
+  ai_status       String     @default("human")
+  status          BlogStatus @default(draft)
   published_at    DateTime?
-  created_at      DateTime @default(now())
-  updated_at      DateTime @updatedAt
-  site            sites    @relation(fields: [site_id], references: [id], onDelete: Cascade)
+  scheduled_at    DateTime?
+  created_at      DateTime   @default(now())
+  updated_at      DateTime   @updatedAt
+  site            sites      @relation(fields: [site_id], references: [id], onDelete: Cascade)
+  author          users?     @relation(fields: [author_id], references: [id], onDelete: SetNull)
 
   @@unique([site_id, slug])
+  @@index([site_id, status])
+  @@index([site_id, published_at])
 }
 
 model redirects {
@@ -247,120 +483,188 @@ model redirects {
   from_path   String
   to_path     String
   status_code Int      @default(301)
+  type        Int      @default(301)
+  hits        Int      @default(0)
   is_active   Boolean  @default(true)
   created_at  DateTime @default(now())
   updated_at  DateTime @updatedAt
   site        sites    @relation(fields: [site_id], references: [id], onDelete: Cascade)
 
   @@unique([site_id, from_path])
+  @@index([site_id, is_active])
 }
 
 model ai_jobs {
-  id            String   @id @default(uuid()) @db.Uuid
-  site_id       String   @db.Uuid
+  id            String      @id @default(uuid()) @db.Uuid
+  site_id       String?     @db.Uuid
+  job_type      String?
   entity_type   String
   entity_id     String?
-  task_type     String
+  task_type     String?
   provider      String?
   model         String?
-  status        String   @default("queued")
+  model_used    String?
+  prompt_used   String?
+  tokens_used   Int?
+  status        AiJobStatus @default(queued)
   input_payload Json
   output_payload Json?
+  input         Json?
+  output        Json?
   error_message String?
-  created_at    DateTime @default(now())
-  updated_at    DateTime @updatedAt
-  site          sites    @relation(fields: [site_id], references: [id], onDelete: Cascade)
+  error         String?
+  approved_by   String?     @db.Uuid
+  approved_at   DateTime?
+  created_at    DateTime    @default(now())
+  updated_at    DateTime    @updatedAt
+  site          sites?      @relation(fields: [site_id], references: [id], onDelete: Cascade)
+  approved_user users?      @relation("ai_jobs_approved_by", fields: [approved_by], references: [id], onDelete: SetNull)
+
+  @@index([site_id, status])
+  @@index([site_id, created_at])
+  @@index([task_type, status])
 }
 
 model ai_model_config {
-  id               String   @id @default(uuid()) @db.Uuid
-  provider         String
-  model            String
-  task_type        String
+  id                String    @id @default(uuid()) @db.Uuid
+  site_id           String?   @db.Uuid
+  provider          String
+  model             String
+  model_id          String?
+  task_type         String
+  task              String?
   api_key_encrypted String
-  is_active        Boolean  @default(true)
-  priority         Int      @default(1)
-  settings         Json     @default("{}")
-  created_at       DateTime @default(now())
-  updated_at       DateTime @updatedAt
+  api_key_enc       String?
+  is_active         Boolean   @default(true)
+  priority          Int       @default(1)
+  settings          Json      @default("{}")
+  parameters        Json      @default("{}")
+  created_at        DateTime  @default(now())
+  updated_at        DateTime  @updatedAt
+  site              sites?    @relation(fields: [site_id], references: [id], onDelete: Cascade)
 
   @@unique([provider, model, task_type])
+  @@unique([site_id, task])
+  @@index([task_type, is_active])
+  @@index([site_id, is_active])
 }
 
 model landing_pages {
-  id          String   @id @default(uuid()) @db.Uuid
-  site_id     String   @db.Uuid
-  name        String
-  slug        String
-  blocks      Json
-  is_published Boolean @default(false)
-  created_at  DateTime @default(now())
-  updated_at  DateTime @updatedAt
-  site        sites    @relation(fields: [site_id], references: [id], onDelete: Cascade)
+  id           String            @id @default(uuid()) @db.Uuid
+  site_id      String            @db.Uuid
+  name         String
+  slug         String
+  blocks       Json
+  meta_title   String?
+  meta_desc    String?
+  status       LandingPageStatus @default(draft)
+  is_published Boolean           @default(false)
+  created_at   DateTime          @default(now())
+  updated_at   DateTime          @updatedAt
+  site         sites             @relation(fields: [site_id], references: [id], onDelete: Cascade)
+  ab_test_variants ab_test_variants[]
 
   @@unique([site_id, slug])
+  @@index([site_id, status])
 }
 
 model ab_tests {
-  id             String   @id @default(uuid()) @db.Uuid
-  site_id        String   @db.Uuid
-  landing_page_id String  @db.Uuid
-  name           String
-  status         String   @default("draft")
-  traffic_split  Json
-  started_at     DateTime?
-  completed_at   DateTime?
+  id                String       @id @default(uuid()) @db.Uuid
+  site_id           String       @db.Uuid
+  landing_page_id   String?      @db.Uuid
+  name              String
+  status            AbTestStatus @default(draft)
+  success_metric    String?
+  traffic_split     Json
+  winner_id         String?      @db.Uuid
   winner_variant_id String?
-  created_at     DateTime @default(now())
-  updated_at     DateTime @updatedAt
-  site           sites    @relation(fields: [site_id], references: [id], onDelete: Cascade)
-  variants       ab_test_variants[]
+  significance      Decimal?     @db.Decimal(5, 2)
+  started_at        DateTime?
+  ended_at          DateTime?
+  completed_at      DateTime?
+  created_at        DateTime     @default(now())
+  updated_at        DateTime     @updatedAt
+  site              sites        @relation(fields: [site_id], references: [id], onDelete: Cascade)
+  variants          ab_test_variants[]
+
+  @@index([site_id, status])
 }
 
 model ab_test_variants {
-  id          String   @id @default(uuid()) @db.Uuid
-  test_id     String   @db.Uuid
-  name        String
-  blocks      Json
-  is_control  Boolean  @default(false)
-  created_at  DateTime @default(now())
-  test        ab_tests @relation(fields: [test_id], references: [id], onDelete: Cascade)
+  id              String        @id @default(uuid()) @db.Uuid
+  test_id         String        @db.Uuid
+  landing_page_id String?       @db.Uuid
+  name            String
+  blocks          Json
+  is_control      Boolean       @default(false)
+  traffic_pct     Int?
+  visitors        Int           @default(0)
+  conversions     Int           @default(0)
+  revenue         Decimal       @db.Decimal(10, 2) @default(0)
+  created_at      DateTime      @default(now())
+  test            ab_tests      @relation(fields: [test_id], references: [id], onDelete: Cascade)
+  landing_page    landing_pages? @relation(fields: [landing_page_id], references: [id], onDelete: SetNull)
+
+  @@index([test_id])
 }
 
 model meesho_import_log {
-  id            String   @id @default(uuid()) @db.Uuid
-  site_id       String   @db.Uuid
-  source_url    String
-  status        String   @default("queued")
-  products_found Int     @default(0)
-  products_imported Int   @default(0)
-  error_message String?
-  started_at    DateTime?
-  completed_at  DateTime?
-  created_at    DateTime @default(now())
-  site          sites    @relation(fields: [site_id], references: [id], onDelete: Cascade)
+  id                String            @id @default(uuid()) @db.Uuid
+  site_id           String            @db.Uuid
+  source_url        String
+  status            MeeshoImportStatus @default(pending)
+  products_found    Int               @default(0)
+  products_imported Int               @default(0)
+  reviews_found     Int               @default(0)
+  reviews_imported  Int               @default(0)
+  reviews_skipped   Int               @default(0)
+  images_downloaded Int               @default(0)
+  error_message     String?
+  error             String?
+  started_at        DateTime?
+  completed_at      DateTime?
+  created_at        DateTime          @default(now())
+  site              sites             @relation(fields: [site_id], references: [id], onDelete: Cascade)
+
+  @@index([site_id, created_at])
+  @@index([site_id, status])
 }
 
 model seo_audit_results {
-  id            String   @id @default(uuid()) @db.Uuid
-  site_id       String   @db.Uuid
+  id            String      @id @default(uuid()) @db.Uuid
+  site_id       String      @db.Uuid
   page_url      String
-  page_type     String
-  score         Int
-  issues        Json
-  suggestions   Json
-  status        String   @default("open")
-  created_at    DateTime @default(now())
-  updated_at    DateTime @updatedAt
-  site          sites    @relation(fields: [site_id], references: [id], onDelete: Cascade)
+  page_type     String?
+  audit_type    String?
+  score         Int?
+  severity      SeoSeverity?
+  issue         String?
+  suggestion    String?
+  issues        Json?
+  suggestions   Json?
+  auto_fix      Boolean     @default(false)
+  fixed         Boolean     @default(false)
+  fixed_at      DateTime?
+  status        String      @default("open")
+  created_at    DateTime    @default(now())
+  updated_at    DateTime    @updatedAt
+  site          sites       @relation(fields: [site_id], references: [id], onDelete: Cascade)
+
+  @@index([site_id, created_at])
+  @@index([site_id, severity])
+  @@index([site_id, status])
 }
 
 model heatmap_events {
-  id           String   @id @default(uuid()) @db.Uuid
-  site_id      String   @db.Uuid
-  session_id   String
-  event_type   String
-  page_url     String
-  payload      Json
-  created_at   DateTime @default(now())
+  id         String   @id @default(uuid()) @db.Uuid
+  site_id    String   @db.Uuid
+  session_id String
+  event_type String
+  page_url   String
+  payload    Json
+  created_at DateTime @default(now())
+  site       sites    @relation(fields: [site_id], references: [id], onDelete: Cascade)
+
+  @@index([site_id, created_at])
+  @@index([site_id, page_url])
 }

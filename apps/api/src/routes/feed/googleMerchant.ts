@@ -9,7 +9,7 @@ router.get('/google-merchant', async (req, res) => {
   const siteId = getSiteId(req);
   if (!siteId) return res.status(400).json({ ok: false, message: 'Missing site scope' });
   const products = await db.products.findMany({
-    where: { site_id: siteId, is_deleted: false, status: 'published' },
+    where: { site_id: siteId, is_deleted: false, status: 'active' },
     select: { id: true, name: true, slug: true, price: true, stock_qty: true, description: true },
     take: 500
   });

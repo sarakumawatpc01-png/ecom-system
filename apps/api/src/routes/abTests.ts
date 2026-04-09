@@ -2,6 +2,7 @@ import { Router } from 'express';
 import { z } from 'zod';
 import { db } from '../lib/db';
 import { injectSiteScope } from '../middleware/siteScope';
+import { requireRole } from '../middleware/auth';
 import { getSiteId } from '../utils/request';
 
 const router = Router({ mergeParams: true });
@@ -20,7 +21,7 @@ const testSchema = z.object({
   )
 });
 
-router.post('/', async (req, res) => {
+router.post('/', requireRole('super_admin', 'site_admin'), async (req, res) => {
   const siteId = getSiteId(req);
   if (!siteId) return res.status(400).json({ ok: false, message: 'Missing site scope' });
   const parsed = testSchema.safeParse(req.body || {});
@@ -35,7 +36,7 @@ router.post('/', async (req, res) => {
       variants: {
         create: parsed.data.variants.map((variant) => ({
           name: variant.name,
-          blocks: variant.blocks,
+          blocks: variant.blocks as any,
           is_control: Boolean(variant.is_control)
         }))
       }
@@ -45,7 +46,7 @@ router.post('/', async (req, res) => {
   return res.status(201).json({ ok: true, data: test });
 });
 
-router.put('/:id/start', async (req, res) => {
+router.put('/:id/start', requireRole('super_admin', 'site_admin'), async (req, res) => {
   const siteId = getSiteId(req);
   if (!siteId) return res.status(400).json({ ok: false, message: 'Missing site scope' });
   const result = await db.ab_tests.updateMany({
@@ -56,7 +57,7 @@ router.put('/:id/start', async (req, res) => {
   return res.json({ ok: true });
 });
 
-router.put('/:id/pause', async (req, res) => {
+router.put('/:id/pause', requireRole('super_admin', 'site_admin'), async (req, res) => {
   const siteId = getSiteId(req);
   if (!siteId) return res.status(400).json({ ok: false, message: 'Missing site scope' });
   const result = await db.ab_tests.updateMany({ where: { site_id: siteId, id: req.params.id }, data: { status: 'paused' } });
@@ -64,7 +65,7 @@ router.put('/:id/pause', async (req, res) => {
   return res.json({ ok: true });
 });
 
-router.put('/:id/complete', async (req, res) => {
+router.put('/:id/complete', requireRole('super_admin', 'site_admin'), async (req, res) => {
   const siteId = getSiteId(req);
   const winnerVariantId = req.body?.winner_variant_id ? String(req.body.winner_variant_id) : null;
   if (!siteId) return res.status(400).json({ ok: false, message: 'Missing site scope' });

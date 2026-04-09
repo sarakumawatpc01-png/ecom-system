@@ -43,7 +43,7 @@ const createCopyJob = async (siteId: string, productId: string, prompt: string) 
     where: { id: job.id },
     data: {
       status: 'completed',
-      output_payload: {
+      output_payload: ({
         text: output.text,
         description: output.text,
         short_description: output.text.slice(0, 160),
@@ -52,7 +52,7 @@ const createCopyJob = async (siteId: string, productId: string, prompt: string) 
         provider: output.provider,
         model: output.model,
         raw: output.raw
-      }
+      } as any)
     }
   });
 };
