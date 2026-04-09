@@ -1,7 +1,9 @@
+const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3001';
+
 export const metadata = {
   title: 'Demo Store',
   description: 'Demo multi-site storefront scaffold',
-  alternates: { canonical: 'https://example.com' }
+  alternates: { canonical: siteUrl }
 };
 
 export default function SiteHome() {
