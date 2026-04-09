@@ -1,0 +1,366 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model sites {
+  id                String   @id @default(uuid()) @db.Uuid
+  domain            String   @unique
+  name              String
+  slug              String   @unique
+  config            Json     @default("{}")
+  nginx_port        Int
+  pm2_process_name  String
+  status            String   @default("active")
+  is_deleted        Boolean  @default(false)
+  created_at        DateTime @default(now())
+  updated_at        DateTime @updatedAt
+  categories        categories[]
+  products          products[]
+  users_access      user_site_access[]
+  orders            orders[]
+  customers         customers[]
+  blog_posts        blog_posts[]
+  redirects         redirects[]
+  ai_jobs           ai_jobs[]
+  landing_pages     landing_pages[]
+  ab_tests          ab_tests[]
+  meesho_import_log meesho_import_log[]
+  seo_audit_results seo_audit_results[]
+}
+
+model users {
+  id            String   @id @default(uuid()) @db.Uuid
+  email         String   @unique
+  password_hash String
+  role          String
+  is_active     Boolean  @default(true)
+  totp_enabled  Boolean  @default(false)
+  created_at    DateTime @default(now())
+  updated_at    DateTime @updatedAt
+  access        user_site_access[]
+}
+
+model user_site_access {
+  id         String   @id @default(uuid()) @db.Uuid
+  user_id    String   @db.Uuid
+  site_id    String   @db.Uuid
+  created_at DateTime @default(now())
+  users      users    @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  sites      sites    @relation(fields: [site_id], references: [id], onDelete: Cascade)
+
+  @@unique([user_id, site_id])
+}
+
+model categories {
+  id          String   @id @default(uuid()) @db.Uuid
+  site_id     String   @db.Uuid
+  parent_id   String?  @db.Uuid
+  name        String
+  slug        String
+  description String?
+  image_url   String?
+  sort_order  Int      @default(0)
+  is_active   Boolean  @default(true)
+  created_at  DateTime @default(now())
+  updated_at  DateTime @updatedAt
+  site        sites    @relation(fields: [site_id], references: [id], onDelete: Cascade)
+  products    products[]
+
+  @@unique([site_id, slug])
+}
+
+model products {
+  id                String   @id @default(uuid()) @db.Uuid
+  site_id           String   @db.Uuid
+  category_id       String?  @db.Uuid
+  name              String
+  slug              String
+  description       String?
+  short_description String?
+  sku               String?
+  price             Decimal  @db.Decimal(10, 2)
+  compare_at_price  Decimal? @db.Decimal(10, 2)
+  cost_price        Decimal? @db.Decimal(10, 2)
+  currency          String   @default("INR")
+  stock_qty         Int      @default(0)
+  status            String   @default("draft")
+  seo_title         String?
+  seo_description   String?
+  seo_keywords      String?
+  ai_status         String   @default("pending")
+  is_deleted        Boolean  @default(false)
+  created_at        DateTime @default(now())
+  updated_at        DateTime @updatedAt
+  site              sites    @relation(fields: [site_id], references: [id], onDelete: Cascade)
+  category          categories? @relation(fields: [category_id], references: [id], onDelete: SetNull)
+  images            product_images[]
+  variants          product_variants[]
+  videos            product_videos[]
+  reviews           reviews[]
+  order_items       order_items[]
+
+  @@unique([site_id, slug])
+}
+
+model product_images {
+  id         String   @id @default(uuid()) @db.Uuid
+  product_id String   @db.Uuid
+  site_id    String   @db.Uuid
+  url        String
+  alt_text   String?
+  sort_order Int      @default(0)
+  created_at DateTime @default(now())
+  product    products @relation(fields: [product_id], references: [id], onDelete: Cascade)
+}
+
+model product_variants {
+  id         String   @id @default(uuid()) @db.Uuid
+  product_id String   @db.Uuid
+  site_id    String   @db.Uuid
+  name       String
+  sku        String?
+  price      Decimal  @db.Decimal(10, 2)
+  stock_qty  Int      @default(0)
+  created_at DateTime @default(now())
+  product    products @relation(fields: [product_id], references: [id], onDelete: Cascade)
+}
+
+model product_videos {
+  id          String   @id @default(uuid()) @db.Uuid
+  product_id  String   @db.Uuid
+  site_id     String   @db.Uuid
+  url         String
+  provider    String?
+  duration_ms Int?
+  created_at  DateTime @default(now())
+  product     products @relation(fields: [product_id], references: [id], onDelete: Cascade)
+}
+
+model reviews {
+  id           String   @id @default(uuid()) @db.Uuid
+  site_id      String   @db.Uuid
+  product_id   String   @db.Uuid
+  customer_id  String?  @db.Uuid
+  rating       Int
+  title        String?
+  content      String?
+  status       String   @default("pending")
+  is_flagged   Boolean  @default(false)
+  created_at   DateTime @default(now())
+  updated_at   DateTime @updatedAt
+  site         sites    @relation(fields: [site_id], references: [id], onDelete: Cascade)
+  product      products @relation(fields: [product_id], references: [id], onDelete: Cascade)
+  images       review_images[]
+}
+
+model review_images {
+  id         String   @id @default(uuid()) @db.Uuid
+  review_id  String   @db.Uuid
+  site_id    String   @db.Uuid
+  url        String
+  created_at DateTime @default(now())
+  review     reviews  @relation(fields: [review_id], references: [id], onDelete: Cascade)
+}
+
+model orders {
+  id                String   @id @default(uuid()) @db.Uuid
+  site_id           String   @db.Uuid
+  customer_id       String?  @db.Uuid
+  order_number      String
+  status            String   @default("pending")
+  payment_status    String   @default("pending")
+  payment_provider  String?
+  subtotal          Decimal  @db.Decimal(10, 2)
+  tax               Decimal  @db.Decimal(10, 2) @default(0)
+  shipping          Decimal  @db.Decimal(10, 2) @default(0)
+  discount          Decimal  @db.Decimal(10, 2) @default(0)
+  total             Decimal  @db.Decimal(10, 2)
+  shipping_address  Json
+  billing_address   Json
+  notes             String?
+  created_at        DateTime @default(now())
+  updated_at        DateTime @updatedAt
+  site              sites    @relation(fields: [site_id], references: [id], onDelete: Cascade)
+  items             order_items[]
+
+  @@unique([site_id, order_number])
+}
+
+model order_items {
+  id          String   @id @default(uuid()) @db.Uuid
+  order_id    String   @db.Uuid
+  product_id  String?  @db.Uuid
+  variant_id  String?  @db.Uuid
+  product_name String
+  sku         String?
+  qty         Int
+  price       Decimal  @db.Decimal(10, 2)
+  total       Decimal  @db.Decimal(10, 2)
+  created_at  DateTime @default(now())
+  order       orders   @relation(fields: [order_id], references: [id], onDelete: Cascade)
+  product     products? @relation(fields: [product_id], references: [id], onDelete: SetNull)
+}
+
+model customers {
+  id          String   @id @default(uuid()) @db.Uuid
+  site_id     String   @db.Uuid
+  email       String
+  phone       String?
+  first_name  String?
+  last_name   String?
+  tags        Json     @default("[]")
+  metadata    Json     @default("{}")
+  created_at  DateTime @default(now())
+  updated_at  DateTime @updatedAt
+  site        sites    @relation(fields: [site_id], references: [id], onDelete: Cascade)
+
+  @@unique([site_id, email])
+}
+
+model blog_posts {
+  id              String   @id @default(uuid()) @db.Uuid
+  site_id         String   @db.Uuid
+  title           String
+  slug            String
+  content         String
+  excerpt         String?
+  featured_image  String?
+  seo_title       String?
+  seo_description String?
+  status          String   @default("draft")
+  published_at    DateTime?
+  created_at      DateTime @default(now())
+  updated_at      DateTime @updatedAt
+  site            sites    @relation(fields: [site_id], references: [id], onDelete: Cascade)
+
+  @@unique([site_id, slug])
+}
+
+model redirects {
+  id          String   @id @default(uuid()) @db.Uuid
+  site_id     String   @db.Uuid
+  from_path   String
+  to_path     String
+  status_code Int      @default(301)
+  is_active   Boolean  @default(true)
+  created_at  DateTime @default(now())
+  updated_at  DateTime @updatedAt
+  site        sites    @relation(fields: [site_id], references: [id], onDelete: Cascade)
+
+  @@unique([site_id, from_path])
+}
+
+model ai_jobs {
+  id            String   @id @default(uuid()) @db.Uuid
+  site_id       String   @db.Uuid
+  entity_type   String
+  entity_id     String?
+  task_type     String
+  provider      String?
+  model         String?
+  status        String   @default("queued")
+  input_payload Json
+  output_payload Json?
+  error_message String?
+  created_at    DateTime @default(now())
+  updated_at    DateTime @updatedAt
+  site          sites    @relation(fields: [site_id], references: [id], onDelete: Cascade)
+}
+
+model ai_model_config {
+  id               String   @id @default(uuid()) @db.Uuid
+  provider         String
+  model            String
+  task_type        String
+  api_key_encrypted String
+  is_active        Boolean  @default(true)
+  priority         Int      @default(1)
+  settings         Json     @default("{}")
+  created_at       DateTime @default(now())
+  updated_at       DateTime @updatedAt
+
+  @@unique([provider, model, task_type])
+}
+
+model landing_pages {
+  id          String   @id @default(uuid()) @db.Uuid
+  site_id     String   @db.Uuid
+  name        String
+  slug        String
+  blocks      Json
+  is_published Boolean @default(false)
+  created_at  DateTime @default(now())
+  updated_at  DateTime @updatedAt
+  site        sites    @relation(fields: [site_id], references: [id], onDelete: Cascade)
+
+  @@unique([site_id, slug])
+}
+
+model ab_tests {
+  id             String   @id @default(uuid()) @db.Uuid
+  site_id        String   @db.Uuid
+  landing_page_id String  @db.Uuid
+  name           String
+  status         String   @default("draft")
+  traffic_split  Json
+  started_at     DateTime?
+  completed_at   DateTime?
+  winner_variant_id String?
+  created_at     DateTime @default(now())
+  updated_at     DateTime @updatedAt
+  site           sites    @relation(fields: [site_id], references: [id], onDelete: Cascade)
+  variants       ab_test_variants[]
+}
+
+model ab_test_variants {
+  id          String   @id @default(uuid()) @db.Uuid
+  test_id     String   @db.Uuid
+  name        String
+  blocks      Json
+  is_control  Boolean  @default(false)
+  created_at  DateTime @default(now())
+  test        ab_tests @relation(fields: [test_id], references: [id], onDelete: Cascade)
+}
+
+model meesho_import_log {
+  id            String   @id @default(uuid()) @db.Uuid
+  site_id       String   @db.Uuid
+  source_url    String
+  status        String   @default("queued")
+  products_found Int     @default(0)
+  products_imported Int   @default(0)
+  error_message String?
+  started_at    DateTime?
+  completed_at  DateTime?
+  created_at    DateTime @default(now())
+  site          sites    @relation(fields: [site_id], references: [id], onDelete: Cascade)
+}
+
+model seo_audit_results {
+  id            String   @id @default(uuid()) @db.Uuid
+  site_id       String   @db.Uuid
+  page_url      String
+  page_type     String
+  score         Int
+  issues        Json
+  suggestions   Json
+  status        String   @default("open")
+  created_at    DateTime @default(now())
+  updated_at    DateTime @updatedAt
+  site          sites    @relation(fields: [site_id], references: [id], onDelete: Cascade)
+}
+
+model heatmap_events {
+  id           String   @id @default(uuid()) @db.Uuid
+  site_id      String   @db.Uuid
+  session_id   String
+  event_type   String
+  page_url     String
+  payload      Json
+  created_at   DateTime @default(now())
+}
