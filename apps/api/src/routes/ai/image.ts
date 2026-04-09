@@ -3,7 +3,9 @@ import { z } from 'zod';
 import { db } from '../../lib/db';
 import { injectSiteScope } from '../../middleware/siteScope';
 import { getSiteId } from '../../utils/request';
+import { decryptText } from '../../utils/crypto';
 import { saveUploadedMedia } from '../../services/mediaStore';
+import { generateImageWithProvider } from '../../services/ai/mediaGeneration';
 
 const router = Router({ mergeParams: true });
 router.use(injectSiteScope);
@@ -21,13 +23,13 @@ router.post('/generate', async (req, res) => {
   const parsed = imageSchema.safeParse(req.body || {});
   if (!parsed.success) return res.status(400).json({ ok: false, message: 'Invalid payload', issues: parsed.error.issues });
 
-  const generatedText = Buffer.from(`Generated image placeholder for: ${parsed.data.prompt}`, 'utf8').toString('base64');
-  const media = await saveUploadedMedia({
-    siteId,
-    filename: `generated-${Date.now()}.png`,
-    mimeType: 'image/png',
-    contentBase64: generatedText
+  const config = await db.ai_model_config.findFirst({
+    where: { task_type: 'image_generation', is_active: true },
+    orderBy: { priority: 'asc' }
   });
+  if (!config) return res.status(400).json({ ok: false, message: 'No active AI config found for image_generation' });
+  const apiKey = decryptText(config.api_key_encrypted, process.env.AI_CONFIG_ENCRYPTION_SECRET || process.env.JWT_SECRET || 'dev-encryption-secret');
+  if (!apiKey) return res.status(400).json({ ok: false, message: 'AI API key decryption failed' });
 
   const job = await db.ai_jobs.create({
     data: {
@@ -35,14 +37,38 @@ router.post('/generate', async (req, res) => {
       entity_type: parsed.data.product_id ? 'product' : 'media',
       entity_id: parsed.data.product_id || null,
       task_type: 'image_generation',
-      provider: 'internal',
-      model: 'placeholder-image-generator',
-      status: 'completed',
-      input_payload: parsed.data,
-      output_payload: media
+      provider: config.provider,
+      model: config.model,
+      status: 'running',
+      input_payload: parsed.data
     }
   });
-  return res.status(201).json({ ok: true, data: { job_id: job.id, media } });
+  try {
+    const generated = await generateImageWithProvider({
+      provider: config.provider,
+      model: config.model,
+      apiKey,
+      prompt: parsed.data.prompt,
+      settings: (config.settings as Record<string, unknown>) || {}
+    });
+    const media = await saveUploadedMedia({
+      siteId,
+      filename: `generated-${Date.now()}.png`,
+      mimeType: 'image/png',
+      sourceUrl: generated.mediaUrl
+    });
+    await db.ai_jobs.update({
+      where: { id: job.id },
+      data: { status: 'completed', output_payload: { media, provider_output: generated.raw } }
+    });
+    return res.status(201).json({ ok: true, data: { job_id: job.id, media } });
+  } catch (error) {
+    await db.ai_jobs.update({
+      where: { id: job.id },
+      data: { status: 'failed', error_message: error instanceof Error ? error.message : 'Image generation failed' }
+    });
+    return res.status(500).json({ ok: false, message: error instanceof Error ? error.message : 'Image generation failed' });
+  }
 });
 
 export default router;

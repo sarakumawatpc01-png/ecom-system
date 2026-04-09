@@ -1,4 +1,4 @@
-import { createHash } from 'crypto';
+import { routerClient } from './router';
 
 type AiCallInput = {
   provider: string;
@@ -23,41 +23,41 @@ const toStringRecord = (value: unknown): Record<string, unknown> => {
   return value as Record<string, unknown>;
 };
 
+const extractTextFromResponse = (raw: Record<string, unknown>) => {
+  const openAiContent =
+    ((raw.choices as Array<Record<string, unknown>> | undefined)?.[0]?.message as Record<string, unknown> | undefined)
+      ?.content;
+  if (typeof openAiContent === 'string' && openAiContent.trim()) return openAiContent.trim();
+
+  const claudeText = (raw.content as Array<Record<string, unknown>> | undefined)?.[0]?.text;
+  if (typeof claudeText === 'string' && claudeText.trim()) return claudeText.trim();
+
+  const geminiParts = (
+    ((raw.candidates as Array<Record<string, unknown>> | undefined)?.[0]?.content as Record<string, unknown> | undefined)
+      ?.parts as Array<Record<string, unknown>> | undefined
+  )?.[0]?.text;
+  if (typeof geminiParts === 'string' && geminiParts.trim()) return geminiParts.trim();
+
+  return '';
+};
+
 export const executeAiProvider = async (input: AiCallInput): Promise<AiCallOutput> => {
-  const provider = input.provider.toLowerCase();
   const settings = toStringRecord(input.settings);
-
-  if (provider === 'openai' && input.apiKey) {
-    const response = await fetch('https://api.openai.com/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        Authorization: `Bearer ${input.apiKey}`,
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({
-        model: input.model,
-        messages: [{ role: 'user', content: input.prompt }],
-        temperature: typeof settings.temperature === 'number' ? settings.temperature : 0.3
-      })
-    });
-    const raw = (await response.json()) as Record<string, unknown>;
-    const content =
-      ((raw.choices as Array<Record<string, unknown>> | undefined)?.[0]?.message as Record<string, unknown> | undefined)
-        ?.content || '';
-    return {
-      provider: input.provider,
-      model: input.model,
-      text: String(content || ''),
-      raw
-    };
+  const raw = await routerClient.call({
+    provider: input.provider,
+    model: input.model,
+    apiKey: input.apiKey,
+    prompt: input.prompt,
+    ...settings
+  });
+  const text = extractTextFromResponse(raw);
+  if (!text) {
+    throw new Error(`Empty AI response from provider ${input.provider}`);
   }
-
-  const digest = createHash('sha256').update(`${input.provider}|${input.model}|${input.prompt}`).digest('hex').slice(0, 16);
   return {
     provider: input.provider,
     model: input.model,
-    text: `[${input.taskType}] Generated result (${digest}) for prompt: ${input.prompt.slice(0, 140)}`,
-    raw: { simulated: true, provider: input.provider, model: input.model, digest }
+    text,
+    raw
   };
 };
-
