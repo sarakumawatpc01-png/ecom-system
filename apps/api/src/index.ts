@@ -34,6 +34,7 @@ import { db } from './lib/db';
 import { authenticate } from './middleware/auth';
 import { apiRateLimit } from './middleware/rateLimit';
 import { errorHandler, notFoundHandler } from './middleware/errorHandler';
+import { runStartupAudit } from './services/startupAudit';
 
 const app = express();
 app.use(cors());
@@ -43,6 +44,15 @@ const authRateLimit = rateLimit({ windowMs: 60_000, limit: 20, standardHeaders: 
 const protectedRateLimit = rateLimit({ windowMs: 60_000, limit: 100, standardHeaders: 'draft-7', legacyHeaders: false });
 
 app.get('/api/health', (_req, res) => res.json({ ok: true, service: 'api', time: new Date().toISOString() }));
+app.get('/api/health/startup', async (_req, res) => {
+  const audit = await runStartupAudit();
+  return res.status(audit.ok ? 200 : 503).json({
+    ...audit,
+    service: 'api',
+    mode: 'strict-startup-audit',
+    time: new Date().toISOString()
+  });
+});
 
 app.use('/auth', authRateLimit, authRoutes);
 
