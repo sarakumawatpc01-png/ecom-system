@@ -20,7 +20,7 @@ export const generateImageWithProvider = async (input: ProviderInput): Promise<{
       method: 'POST',
       headers: { Authorization: `Bearer ${input.apiKey}`, 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        model: input.model || 'gpt-image-1',
+        model: input.model || 'dall-e-3',
         prompt: input.prompt,
         size: typeof settings.size === 'string' ? settings.size : '1024x1024'
       })
@@ -80,4 +80,3 @@ export const generateVideoWithProvider = async (input: ProviderInput): Promise<{
 
   throw new Error(`Unsupported video generation provider: ${input.provider}`);
 };
-

@@ -15,12 +15,17 @@ export type StoredMedia = {
   objectName: string;
 };
 
-const allowedExtensions = new Set(['jpg', 'jpeg', 'png', 'webp', 'gif', 'svg', 'mp4', 'webm', 'pdf', 'txt', 'bin']);
+const allowedExtensions = new Set(['jpg', 'jpeg', 'png', 'webp', 'gif', 'svg', 'mp4', 'webm', 'pdf']);
+const allowedMimePrefixes = ['image/', 'video/'];
+const allowedMimeExact = new Set(['application/pdf']);
 const sanitizeSegment = (value: string) => value.replace(/[^a-zA-Z0-9-_]/g, '');
 const isSafeUrl = (value: string) => /^https?:\/\//i.test(value);
 const getAllowedExtension = (filename: string) => {
   const extRaw = (filename.split('.').pop() || 'bin').replace(/[^a-zA-Z0-9]/g, '').toLowerCase() || 'bin';
-  return allowedExtensions.has(extRaw) ? extRaw : 'bin';
+  if (!allowedExtensions.has(extRaw)) {
+    throw new Error(`Unsupported media extension: ${extRaw}`);
+  }
+  return extRaw;
 };
 
 const mediaPrefix = (siteId: string) => `sites/${sanitizeSegment(siteId)}/media`;
@@ -31,6 +36,12 @@ const maybeConvertImage = async (mimeType: string, buffer: Buffer) => {
   if (!mimeType.startsWith('image/')) return { buffer, mimeType };
   const converted = await processImageToWebP(buffer);
   return { buffer: converted, mimeType: 'image/webp' };
+};
+
+const validateMimeType = (mimeType: string) => {
+  if (allowedMimeExact.has(mimeType)) return;
+  if (allowedMimePrefixes.some((prefix) => mimeType.startsWith(prefix))) return;
+  throw new Error(`Unsupported media mime type: ${mimeType}`);
 };
 
 const fetchRemoteBuffer = async (url: string) => {
@@ -64,6 +75,7 @@ export const saveUploadedMedia = async (input: {
   }
 
   const processed = await maybeConvertImage(mimeType, sourceBuffer);
+  validateMimeType(processed.mimeType);
   const ext = processed.mimeType === 'image/webp' ? 'webp' : getAllowedExtension(input.filename);
   const objectName = fileObject(input.siteId, id, ext);
   await putObjectBuffer(objectName, processed.buffer, processed.mimeType);
@@ -108,4 +120,3 @@ export const deleteMedia = async (siteId: string, id: string): Promise<boolean> 
     return false;
   }
 };
-
