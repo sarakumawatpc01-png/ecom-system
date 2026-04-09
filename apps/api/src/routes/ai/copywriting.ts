@@ -4,6 +4,7 @@ import { injectSiteScope } from '../../middleware/siteScope';
 import { getSiteId } from '../../utils/request';
 import { executeAiProvider } from '../../services/ai/providerExecutor';
 import { decryptText } from '../../utils/crypto';
+import { captureApiError } from '../../services/monitoring/sentry';
 
 const router = Router({ mergeParams: true });
 router.use(injectSiteScope);
@@ -30,31 +31,42 @@ const createCopyJob = async (siteId: string, productId: string, prompt: string) 
   });
   if (!config) return job;
   const apiKey = decryptApiKey(config.api_key_encrypted);
-  if (!apiKey) return db.ai_jobs.update({ where: { id: job.id }, data: { status: 'failed', error_message: 'Unable to decrypt API key' } });
-  const output = await executeAiProvider({
-    provider: config.provider,
-    model: config.model,
-    apiKey,
-    prompt,
-    taskType: 'copywriting',
-    settings: (config.settings as Record<string, unknown>) || {}
-  });
-  return db.ai_jobs.update({
-    where: { id: job.id },
-    data: {
-      status: 'completed',
-      output_payload: ({
-        text: output.text,
-        description: output.text,
-        short_description: output.text.slice(0, 160),
-        seo_title: output.text.slice(0, 60),
-        seo_description: output.text.slice(0, 155),
-        provider: output.provider,
-        model: output.model,
-        raw: output.raw
-      } as any)
-    }
-  });
+  if (!apiKey) {
+    captureApiError('AI job failed: decrypt api key', { ai_job: { id: job.id, task_type: 'copywriting', site_id: siteId } });
+    return db.ai_jobs.update({ where: { id: job.id }, data: { status: 'failed', error_message: 'Unable to decrypt API key' } });
+  }
+  try {
+    const output = await executeAiProvider({
+      provider: config.provider,
+      model: config.model,
+      apiKey,
+      prompt,
+      taskType: 'copywriting',
+      settings: (config.settings as Record<string, unknown>) || {}
+    });
+    return db.ai_jobs.update({
+      where: { id: job.id },
+      data: {
+        status: 'completed',
+        output_payload: ({
+          text: output.text,
+          description: output.text,
+          short_description: output.text.slice(0, 160),
+          seo_title: output.text.slice(0, 60),
+          seo_description: output.text.slice(0, 155),
+          provider: output.provider,
+          model: output.model,
+          raw: output.raw
+        } as any)
+      }
+    });
+  } catch (error) {
+    captureApiError(error, { ai_job: { id: job.id, task_type: 'copywriting', site_id: siteId } });
+    return db.ai_jobs.update({
+      where: { id: job.id },
+      data: { status: 'failed', error_message: error instanceof Error ? error.message : 'Copy generation failed' }
+    });
+  }
 };
 
 router.post('/product/:id', async (req, res) => {

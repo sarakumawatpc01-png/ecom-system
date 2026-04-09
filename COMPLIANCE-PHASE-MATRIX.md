@@ -18,7 +18,7 @@ Status legend: **Done** = implemented in codebase, **Partial** = scaffolded/inco
 | 11 | 12 (Per-site admin panels) | Partial | `/home/runner/work/ecom-system/ecom-system/apps/per-site-admin` |
 | 12 | 13 (Public Next.js sites) | Partial | `/home/runner/work/ecom-system/ecom-system/apps/site-demo` |
 | 13 | 15 (Deployment workflow) | Partial | `/home/runner/work/ecom-system/ecom-system/scripts/new-site.sh`, `/home/runner/work/ecom-system/ecom-system/scripts/deploy-site.sh` |
-| 14 | 16 (Monitoring + CI/CD) | Missing | No committed Uptime Kuma/Lighthouse CI/Sentry/Search Console integration artifacts yet |
+| 14 | 16 (Monitoring + CI/CD) | Done | `/home/runner/work/ecom-system/ecom-system/.github/workflows/ci.yml`, `/home/runner/work/ecom-system/ecom-system/.github/workflows/lighthouse.yml`, `/home/runner/work/ecom-system/ecom-system/apps/site-demo/.lighthouserc.js`, `/home/runner/work/ecom-system/ecom-system/monitoring/uptime-kuma/monitors.template.json`, `/home/runner/work/ecom-system/ecom-system/apps/api/src/services/monitoring/sentry.ts`, `/home/runner/work/ecom-system/ecom-system/apps/api/src/services/monitoring/gsc.ts`, `/home/runner/work/ecom-system/ecom-system/apps/api/src/workers/gscWorker.ts`, `/home/runner/work/ecom-system/ecom-system/apps/*/sentry*.ts` |
 | 15 | 17–18 (Merchant feed + email) | Partial | `/home/runner/work/ecom-system/ecom-system/apps/api/src/routes/feed/googleMerchant.ts`, `/home/runner/work/ecom-system/ecom-system/apps/api/src/services/emailService.ts`, `/home/runner/work/ecom-system/ecom-system/apps/api/src/queues/emailQueue.ts` |
 | 16 | 19 (security finalization) | Partial | `/home/runner/work/ecom-system/ecom-system/apps/api/src/middleware/auth.ts`, `/home/runner/work/ecom-system/ecom-system/apps/api/src/middleware/rateLimit.ts`, `/home/runner/work/ecom-system/ecom-system/apps/api/src/services/startupAudit.ts` |
 | 17 | 20 (pre-launch checklist) | Missing | No full pre-launch evidence checklist artifact yet |
@@ -51,3 +51,14 @@ Status legend: **Done** = implemented in codebase, **Partial** = scaffolded/inco
   - `GET /api/:siteId/seo/agent/scheduled-jobs`
   - `POST /api/:siteId/seo/agent/run-now` (`nightly|weekly|monday|monthly`)
 - Bootstrapped cron-based SEO worker startup in API runtime (`node-cron`, env-configurable schedule overrides).
+
+## Phase 14 delivered in this change
+
+- Added CI workflow for lint/build/test on push to `main` and all pull requests (`.github/workflows/ci.yml`).
+- Added Lighthouse CI workflow on push to `main` that blocks failures via assertions in `apps/site-demo/.lighthouserc.js`.
+- Added storefront sample product/category routes to support Lighthouse route coverage.
+- Added Uptime Kuma monitor template with homepage/product/category/API health checks, 1-minute interval, and 2-failure alert policy.
+- Added Sentry initialization across API and all Next.js apps:
+  - API runtime init + error middleware + failed AI job capture.
+  - Next apps instrumentation files and Sentry config files.
+- Added Google Search Console integration service with OAuth refresh-token flow, route-backed reporting, and 6-hour cron sync worker.

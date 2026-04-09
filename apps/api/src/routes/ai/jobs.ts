@@ -5,6 +5,7 @@ import { injectSiteScope } from '../../middleware/siteScope';
 import { getSiteId, toPagination } from '../../utils/request';
 import { executeAiProvider } from '../../services/ai/providerExecutor';
 import { decryptText } from '../../utils/crypto';
+import { captureApiError } from '../../services/monitoring/sentry';
 
 const router = Router({ mergeParams: true });
 router.use(injectSiteScope);
@@ -45,6 +46,7 @@ const queueAndRunRewrite = async (siteId: string, taskType: string, entityId: st
   const apiKey = decryptApiKey(config.api_key_encrypted);
   if (!apiKey) {
     await db.ai_jobs.update({ where: { id: job.id }, data: { status: 'failed', error_message: 'Unable to decrypt API key' } });
+    captureApiError('AI job failed: decrypt api key', { ai_job: { id: job.id, task_type: taskType, site_id: siteId } });
     return job;
   }
   try {
@@ -62,6 +64,7 @@ const queueAndRunRewrite = async (siteId: string, taskType: string, entityId: st
       where: { id: job.id },
       data: { status: 'failed', error_message: error instanceof Error ? error.message : 'AI provider execution failed' }
     });
+    captureApiError(error, { ai_job: { id: job.id, task_type: taskType, site_id: siteId } });
   }
   return job;
 };

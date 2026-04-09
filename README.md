@@ -33,6 +33,20 @@ Key variables used by current scaffold:
 
 - API: `PORT`, `JWT_SECRET`, `DATABASE_URL`
 - Site apps: `SITE_ID`, `API_BASE`, `NEXT_PUBLIC_SITE_ID`, `NEXT_PUBLIC_API_BASE`
+- Monitoring: `SENTRY_DSN`, `NEXT_PUBLIC_SENTRY_DSN`, `GSC_SYNC_ENABLED`, `GSC_SYNC_CRON`
+
+For per-site Google Search Console OAuth, store credentials in `sites.config` JSON:
+
+```json
+{
+  "gsc": {
+    "propertyUrl": "sc-domain:example.com",
+    "clientId": "google-oauth-client-id",
+    "clientSecret": "google-oauth-client-secret",
+    "refreshToken": "google-oauth-refresh-token"
+  }
+}
+```
 
 ## Notes
 

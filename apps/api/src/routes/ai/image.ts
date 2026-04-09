@@ -6,6 +6,7 @@ import { getSiteId } from '../../utils/request';
 import { decryptText } from '../../utils/crypto';
 import { saveUploadedMedia } from '../../services/mediaStore';
 import { generateImageWithProvider } from '../../services/ai/mediaGeneration';
+import { captureApiError } from '../../services/monitoring/sentry';
 
 const router = Router({ mergeParams: true });
 router.use(injectSiteScope);
@@ -67,6 +68,7 @@ router.post('/generate', async (req, res) => {
       where: { id: job.id },
       data: { status: 'failed', error_message: error instanceof Error ? error.message : 'Image generation failed' }
     });
+    captureApiError(error, { ai_job: { id: job.id, task_type: 'image_generation', site_id: siteId } });
     return res.status(500).json({ ok: false, message: error instanceof Error ? error.message : 'Image generation failed' });
   }
 });
