@@ -18,7 +18,11 @@ export type StoredMedia = {
 const allowedExtensions = new Set(['jpg', 'jpeg', 'png', 'webp', 'gif', 'svg', 'mp4', 'webm', 'pdf']);
 const allowedMimePrefixes = ['image/', 'video/'];
 const allowedMimeExact = new Set(['application/pdf']);
-const sanitizeSegment = (value: string) => value.replace(/[^a-zA-Z0-9-_]/g, '');
+const sanitizeSegment = (value: string) => {
+  const stripped = value.replace(/[^a-zA-Z0-9-_]/g, '');
+  if (stripped.includes('..')) throw new Error('Unsafe path segment');
+  return stripped;
+};
 const isPrivateHost = (host: string) => {
   const trimmedHost = host.trim().toLowerCase();
   const normalized = trimmedHost.replace(/^\[|\]$/g, '');
