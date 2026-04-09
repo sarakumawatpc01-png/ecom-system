@@ -3,7 +3,6 @@ import { decryptText } from '../utils/crypto';
 import { ensureMediaBucket } from './objectStorage';
 
 type CheckResult = { ok: boolean; details: Record<string, unknown> };
-type ActiveModelConfig = Awaited<ReturnType<typeof db.ai_model_config.findMany>>[number];
 
 const requiredEnvVars = [
   'DATABASE_URL',
@@ -111,7 +110,7 @@ const runProviderCheck = async (): Promise<CheckResult> => {
         requiredTasks: requiredAiTasks,
         missingTasks,
         activeConfigCount: activeConfigs.length,
-        activeConfigs: activeConfigs.map((item: ActiveModelConfig) => ({
+        activeConfigs: activeConfigs.map((item: (typeof activeConfigs)[number]) => ({
           task_type: item.task_type,
           provider: item.provider,
           model: item.model,

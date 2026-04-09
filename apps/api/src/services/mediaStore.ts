@@ -21,7 +21,6 @@ const allowedMimeExact = new Set(['application/pdf']);
 const sanitizeSegment = (value: string) => {
   if (value.includes('..')) throw new Error('Unsafe path segment');
   const stripped = value.replace(/[^a-zA-Z0-9-_]/g, '');
-  if (stripped.includes('..')) throw new Error('Unsafe path segment');
   return stripped;
 };
 const isPrivateHost = (host: string) => {
