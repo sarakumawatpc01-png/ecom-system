@@ -39,12 +39,13 @@ app.use(cors());
 app.use(express.json({ limit: '5mb' }));
 app.use(apiRateLimit);
 const authRateLimit = rateLimit({ windowMs: 60_000, limit: 20, standardHeaders: 'draft-7', legacyHeaders: false });
+const protectedRateLimit = rateLimit({ windowMs: 60_000, limit: 100, standardHeaders: 'draft-7', legacyHeaders: false });
 
 app.get('/api/health', (_req, res) => res.json({ ok: true, service: 'api', time: new Date().toISOString() }));
 
 app.use('/auth', authRateLimit, authRoutes);
 
-app.use('/api', authenticate);
+app.use('/api', protectedRateLimit, authenticate);
 app.use('/api/sites', sitesRoutes);
 app.use('/api/ai/config', aiConfigRoutes);
 app.get('/api/analytics/overview', (_req, res) =>
