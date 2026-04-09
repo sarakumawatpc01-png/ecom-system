@@ -1,9 +1,6 @@
 import type { ReactNode } from 'react';
 import type { Metadata } from 'next';
 import Script from 'next/script';
-import { Inter } from 'next/font/google';
-
-const inter = Inter({ subsets: ['latin'], variable: '--font-inter' });
 
 const siteDomain = process.env.SITE_DOMAIN || 'localhost:3001';
 const siteUrl = `https://${siteDomain}`;
@@ -18,7 +15,7 @@ export const metadata: Metadata = {
 export default function RootLayout({ children }: { children: ReactNode }) {
   return (
     <html lang="en">
-      <body className={inter.variable} style={{ margin: 0, fontFamily: 'var(--font-inter), sans-serif' }}>
+      <body style={{ margin: 0, fontFamily: 'Inter, Arial, sans-serif' }}>
         <Script id="ga4" strategy="afterInteractive">
           {`window.dataLayer = window.dataLayer || []; function gtag(){dataLayer.push(arguments);} gtag('js', new Date());`}
         </Script>

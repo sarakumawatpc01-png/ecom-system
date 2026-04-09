@@ -1,8 +1,5 @@
 import type { Metadata } from 'next';
-import { Inter } from 'next/font/google';
 import type { ReactNode } from 'react';
-
-const inter = Inter({ subsets: ['latin'], variable: '--font-inter' });
 
 const navItems = ['Dashboard', 'Products', 'Categories', 'Orders', 'Customers', 'Reviews', 'Blog', 'SEO', 'Heatmaps', 'Landing Pages', 'Analytics', 'Settings'];
 
@@ -14,7 +11,7 @@ export const metadata: Metadata = {
 export default function RootLayout({ children }: { children: ReactNode }) {
   return (
     <html lang="en">
-      <body className={inter.variable} style={{ margin: 0, background: '#0F0F0F', color: '#F1F1F1' }}>
+      <body style={{ margin: 0, background: '#0F0F0F', color: '#F1F1F1', fontFamily: 'Inter, Arial, sans-serif' }}>
         <div style={{ display: 'flex', minHeight: '100vh' }}>
           <aside style={{ width: 220, borderRight: '1px solid #2E2E2E', padding: 16, background: '#1A1A1A' }}>
             <h2 style={{ marginTop: 0, fontSize: 16 }}>Site Admin</h2>

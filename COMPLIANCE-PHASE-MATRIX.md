@@ -14,9 +14,9 @@ Status legend: **Done** = implemented in codebase, **Partial** = scaffolded/inco
 | 7 | 8 (Heatmaps/session intelligence) | Partial | `/home/runner/work/ecom-system/ecom-system/apps/api/src/routes/heatmaps.ts`, `/home/runner/work/ecom-system/ecom-system/packages/db/prisma/schema.prisma` (`heatmap_events`) — added event ingestion, session filters (converted/bounced/device/source/rage clicks), and AI insight summary API |
 | 8 | 9 (Ads command centre) | Partial | `/home/runner/work/ecom-system/ecom-system/apps/api/src/routes/ads.ts`, `/home/runner/work/ecom-system/ecom-system/apps/api/src/index.ts` (`/api/ads/overview`) — added performance, budget tracker, attribution breakdown, and persistent UTM builder/history APIs |
 | 9 | 10 (Landing pages + A/B tests) | Partial | `/home/runner/work/ecom-system/ecom-system/apps/api/src/routes/landingPages.ts`, `/home/runner/work/ecom-system/ecom-system/apps/api/src/routes/abTests.ts` — expanded A/B constraints (2–5 variants, split validation), live metrics, significance/confidence bands, and declare-winner flow |
-| 10 | 11 (Super admin panel) | Partial | `/home/runner/work/ecom-system/ecom-system/apps/super-admin` |
-| 11 | 12 (Per-site admin panels) | Partial | `/home/runner/work/ecom-system/ecom-system/apps/per-site-admin` |
-| 12 | 13 (Public Next.js sites) | Partial | `/home/runner/work/ecom-system/ecom-system/apps/site-demo` |
+| 10 | 11 (Super admin panel) | Partial | `/home/runner/work/ecom-system/ecom-system/apps/super-admin/app/layout.tsx`, `/home/runner/work/ecom-system/ecom-system/apps/super-admin/app/site-selector.tsx`, `/home/runner/work/ecom-system/ecom-system/apps/super-admin/app/page.tsx` (dark shell + broad module nav + persistent site selector + overview cards scaffold) |
+| 11 | 12 (Per-site admin panels) | Partial | `/home/runner/work/ecom-system/ecom-system/apps/per-site-admin/app/layout.tsx`, `/home/runner/work/ecom-system/ecom-system/apps/per-site-admin/app/page.tsx`, `/home/runner/work/ecom-system/ecom-system/apps/per-site-admin/app/admin/[siteId]/page.tsx` (site-scoped nav/shell + `/admin/[siteId]` route scaffold) |
+| 12 | 13 (Public Next.js sites) | Partial | `/home/runner/work/ecom-system/ecom-system/apps/site-demo/app/layout.tsx`, `/home/runner/work/ecom-system/ecom-system/apps/site-demo/app/sitemap.ts`, `/home/runner/work/ecom-system/ecom-system/apps/site-demo/app/robots.ts`, `/home/runner/work/ecom-system/ecom-system/apps/site-demo/app/{about,contact,search,cart,checkout,account,blog,store,lp,[category],products/[slug],categories/[slug]}` (expanded route map + metadata/noindex rules scaffold) |
 | 13 | 15 (Deployment workflow) | Done | `/home/runner/work/ecom-system/ecom-system/scripts/new-site.sh`, `/home/runner/work/ecom-system/ecom-system/scripts/deploy-site.sh`, `/home/runner/work/ecom-system/ecom-system/scripts/generate-nginx-site-config.sh`, `/home/runner/work/ecom-system/ecom-system/scripts/templates/nginx-site.conf.template`, `/home/runner/work/ecom-system/ecom-system/briefs/*.md`, `/home/runner/work/ecom-system/ecom-system/briefs/*.sql` |
 | 14 | 16 (Monitoring + CI/CD) | Done | `/home/runner/work/ecom-system/ecom-system/.github/workflows/ci.yml`, `/home/runner/work/ecom-system/ecom-system/.github/workflows/lighthouse.yml`, `/home/runner/work/ecom-system/ecom-system/apps/site-demo/.lighthouserc.js`, `/home/runner/work/ecom-system/ecom-system/monitoring/uptime-kuma/monitors.template.json`, `/home/runner/work/ecom-system/ecom-system/apps/api/src/services/monitoring/sentry.ts`, `/home/runner/work/ecom-system/ecom-system/apps/api/src/services/monitoring/gsc.ts`, `/home/runner/work/ecom-system/ecom-system/apps/api/src/workers/gscWorker.ts`, `/home/runner/work/ecom-system/ecom-system/apps/*/sentry*.ts` |
 | 15 | 17–18 (Merchant feed + email) | Done | `/home/runner/work/ecom-system/ecom-system/apps/api/src/routes/feed/googleMerchant.ts`, `/home/runner/work/ecom-system/ecom-system/apps/api/src/services/emailService.ts`, `/home/runner/work/ecom-system/ecom-system/apps/api/src/queues/emailQueue.ts`, `/home/runner/work/ecom-system/ecom-system/apps/api/src/workers/emailWorker.ts`, `/home/runner/work/ecom-system/ecom-system/packages/db/prisma/schema.prisma` (`email_logs`) |
@@ -106,3 +106,18 @@ Status legend: **Done** = implemented in codebase, **Partial** = scaffolded/inco
   - Enforced A/B creation constraints (2–5 variants, success metrics, traffic split validation).
   - Added list/results payloads with conversion-rate, revenue-per-visitor, and confidence-band/significance metrics.
   - Added resume and declare-winner workflows, including winner publishing and confidence gating.
+
+## Parts 11–13 frontend continuation delivered in this change
+
+- **Part 11 (Super Admin panel)**:
+  - Replaced single-page placeholder with a dark dashboard shell (sidebar + top header + content region).
+  - Added persistent site selector in header (stored in localStorage) to model global site scoping UX.
+  - Added broad module navigation tree and overview KPI card scaffolding.
+- **Part 12 (Per-site admin panel)**:
+  - Implemented site-admin shell with scoped navigation that omits cross-site modules.
+  - Added `/admin/[siteId]` route scaffold for super-admin site-specific access pathing.
+  - Added site-scoped dashboard cards and context messaging for restricted visibility.
+- **Part 13 (Public Next.js site)**:
+  - Expanded App Router structure with required base routes (about/contact/search/cart/checkout/account/blog/blog post/store city/landing page/category route).
+  - Added `sitemap.ts` and `robots.ts` with noindex-sensitive path exclusions and sitemap pointer.
+  - Added metadata/generateMetadata scaffolding across homepage, category, product, blog, store, and landing routes.
