@@ -1,9 +1,7 @@
 import type { Metadata } from 'next';
+import { buildPageMetadata } from '../lib/site';
 
-export const metadata: Metadata = {
-  title: 'About Demo Store',
-  description: 'Learn about Demo Store, our mission, and customer commitment.'
-};
+export const metadata: Metadata = buildPageMetadata('About Demo Store', 'Learn about Demo Store, our mission, and customer commitment.', '/about');
 
 export default function AboutPage() {
   return (

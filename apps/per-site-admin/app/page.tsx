@@ -2,7 +2,7 @@ export default function SiteAdminHome() {
   return (
     <section>
       <h1 style={{ marginTop: 0 }}>Dashboard</h1>
-      <p style={{ color: '#9CA3AF' }}>Site-scoped dashboard scaffold. Cross-site data is intentionally not shown.</p>
+      <p style={{ color: '#9CA3AF' }}>Site-scoped dashboard. Cross-site data is intentionally not shown.</p>
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, minmax(0, 1fr))', gap: 12, marginTop: 16 }}>
         {[
           ['Today revenue', '₹0'],

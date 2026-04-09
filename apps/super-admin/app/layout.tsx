@@ -1,25 +1,26 @@
 import type { Metadata } from 'next';
 import type { ReactNode } from 'react';
+import Link from 'next/link';
 import SiteSelector from './site-selector';
 
 const navItems = [
-  'Dashboard',
-  'Sites',
-  'AI Studio',
-  'Import',
-  'Products',
-  'Orders',
-  'Customers',
-  'Reviews',
-  'Content',
-  'SEO',
-  'Heatmaps & Sessions',
-  'Ads',
-  'Landing Pages',
-  'Analytics',
-  'Infrastructure',
-  'Users & Permissions',
-  'Settings'
+  { label: 'Dashboard', href: '/' },
+  { label: 'Sites', href: '/sites' },
+  { label: 'AI Studio', href: '/ai-studio' },
+  { label: 'Import', href: '/import' },
+  { label: 'Products', href: '/products' },
+  { label: 'Orders', href: '/orders' },
+  { label: 'Customers', href: '/customers' },
+  { label: 'Reviews', href: '/reviews' },
+  { label: 'Content', href: '/content' },
+  { label: 'SEO', href: '/seo' },
+  { label: 'Heatmaps & Sessions', href: '/heatmaps' },
+  { label: 'Ads', href: '/ads' },
+  { label: 'Landing Pages', href: '/landing-pages' },
+  { label: 'Analytics', href: '/analytics' },
+  { label: 'Infrastructure', href: '/infrastructure' },
+  { label: 'Users & Permissions', href: '/users-permissions' },
+  { label: 'Settings', href: '/settings' }
 ];
 
 export const metadata: Metadata = {
@@ -37,8 +38,10 @@ export default function RootLayout({ children }: { children: ReactNode }) {
             <nav>
               <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'grid', gap: 8 }}>
                 {navItems.map((item) => (
-                  <li key={item} style={{ color: '#9CA3AF', fontSize: 13 }}>
-                    {item}
+                  <li key={item.href} style={{ color: '#9CA3AF', fontSize: 13 }}>
+                    <Link href={item.href} style={{ color: 'inherit', textDecoration: 'none' }}>
+                      {item.label}
+                    </Link>
                   </li>
                 ))}
               </ul>

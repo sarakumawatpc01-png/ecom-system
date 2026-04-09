@@ -1,9 +1,7 @@
 import type { Metadata } from 'next';
+import { buildPageMetadata } from '../lib/site';
 
-export const metadata: Metadata = {
-  title: 'Contact Demo Store',
-  description: 'Contact Demo Store support for orders, delivery, and product help.'
-};
+export const metadata: Metadata = buildPageMetadata('Contact Demo Store', 'Contact Demo Store support for orders, delivery, and product help.', '/contact');
 
 export default function ContactPage() {
   return (

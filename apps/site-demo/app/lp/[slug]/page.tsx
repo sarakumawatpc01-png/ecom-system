@@ -1,4 +1,6 @@
 import type { Metadata } from 'next';
+import { slugToDisplayText } from '../../lib/slug';
+import { buildPageMetadata } from '../../lib/site';
 
 type LandingPageProps = {
   params: Promise<{ slug: string }>;
@@ -6,21 +8,20 @@ type LandingPageProps = {
 
 export async function generateMetadata({ params }: LandingPageProps): Promise<Metadata> {
   const { slug } = await params;
-  const siteDomain = process.env.SITE_DOMAIN || 'localhost:3001';
+  const display = slugToDisplayText(slug);
   return {
-    title: `Landing Page: ${slug.replace(/-/g, ' ')}`,
-    description: 'Campaign landing page scaffold from builder output.',
+    ...buildPageMetadata(`Landing Page: ${display}`, 'Campaign landing page generated from the builder pipeline.', `/lp/${slug}`),
     robots: { index: false, follow: true },
-    alternates: { canonical: `https://${siteDomain}/lp/${slug}` }
   };
 }
 
 export default async function LandingPage({ params }: LandingPageProps) {
   const { slug } = await params;
+  const display = slugToDisplayText(slug);
   return (
     <main style={{ padding: 24 }}>
-      <h1>Landing Page {slug.replace(/-/g, ' ')}</h1>
-      <p>Landing page scaffold route for campaign and A/B flows.</p>
+      <h1>Landing Page {display}</h1>
+      <p>Landing page route for campaign and A/B traffic flows.</p>
     </main>
   );
 }

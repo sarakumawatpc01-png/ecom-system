@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import { slugToDisplayText } from '../lib/slug';
+import { buildPageMetadata } from '../lib/site';
 
 type GenericCategoryPageProps = {
   params: Promise<{ category: string }>;
@@ -7,13 +8,8 @@ type GenericCategoryPageProps = {
 
 export async function generateMetadata({ params }: GenericCategoryPageProps): Promise<Metadata> {
   const { category } = await params;
-  const siteDomain = process.env.SITE_DOMAIN || 'localhost:3001';
   const display = slugToDisplayText(category);
-  return {
-    title: `${display} Category | Demo Store`,
-    description: `Browse ${display} products at Demo Store.`,
-    alternates: { canonical: `https://${siteDomain}/${category}` }
-  };
+  return buildPageMetadata(`${display} Category | Demo Store`, `Browse ${display} products at Demo Store.`, `/${category}`);
 }
 
 export default async function GenericCategoryPage({ params }: GenericCategoryPageProps) {
@@ -22,7 +18,7 @@ export default async function GenericCategoryPage({ params }: GenericCategoryPag
   return (
     <main style={{ padding: 24 }}>
       <h1>{display}</h1>
-      <p>Generic category route scaffold requested by the public-site structure spec.</p>
+      <p>Generic category route aligned with the public-site structure spec.</p>
     </main>
   );
 }

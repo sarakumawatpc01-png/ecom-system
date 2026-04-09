@@ -1,16 +1,15 @@
 import type { MetadataRoute } from 'next';
+import { siteUrl } from './lib/site';
 
 export default function robots(): MetadataRoute.Robots {
-  const siteDomain = process.env.SITE_DOMAIN || 'localhost:3001';
-  const base = `https://${siteDomain}`;
   return {
     rules: [
       {
         userAgent: '*',
         allow: '/',
-        disallow: ['/cart', '/checkout', '/account', '/api']
+        disallow: ['/cart', '/checkout', '/account', '/api', '/thank-you', '/lp']
       }
     ],
-    sitemap: `${base}/sitemap.xml`
+    sitemap: `${siteUrl}/sitemap.xml`
   };
 }

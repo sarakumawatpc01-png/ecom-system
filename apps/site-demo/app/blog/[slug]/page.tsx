@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import { slugToDisplayText } from '../../lib/slug';
+import { buildPageMetadata } from '../../lib/site';
 
 type BlogPageProps = {
   params: Promise<{ slug: string }>;
@@ -7,13 +8,8 @@ type BlogPageProps = {
 
 export async function generateMetadata({ params }: BlogPageProps): Promise<Metadata> {
   const { slug } = await params;
-  const siteDomain = process.env.SITE_DOMAIN || 'localhost:3001';
   const displayTitle = slugToDisplayText(slug);
-  return {
-    title: `${displayTitle} | Demo Store Blog`,
-    description: `Read ${displayTitle} and practical ecommerce tips from Demo Store.`,
-    alternates: { canonical: `https://${siteDomain}/blog/${slug}` }
-  };
+  return buildPageMetadata(`${displayTitle} | Demo Store Blog`, `Read ${displayTitle} and practical ecommerce tips from Demo Store.`, `/blog/${slug}`);
 }
 
 export default async function BlogPostPage({ params }: BlogPageProps) {

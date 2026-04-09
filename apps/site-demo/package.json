@@ -11,6 +11,9 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
+    "@ecom/api-client": "1.0.0",
+    "@ecom/db": "1.0.0",
+    "@ecom/seo": "1.0.0",
     "@sentry/nextjs": "^10.47.0",
     "next": "15.5.14",
     "react": "18.3.1",
