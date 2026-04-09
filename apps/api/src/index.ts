@@ -35,6 +35,7 @@ import { authenticate } from './middleware/auth';
 import { apiRateLimit } from './middleware/rateLimit';
 import { errorHandler, notFoundHandler } from './middleware/errorHandler';
 import { runStartupAudit } from './services/startupAudit';
+import { startSeoWorker } from './workers/seoWorker';
 
 const app = express();
 app.use(cors());
@@ -107,5 +108,6 @@ app.use(errorHandler);
 
 const port = Number(process.env.PORT || 5000);
 app.listen(port, () => {
+  startSeoWorker();
   console.log(`API listening on port ${port}`);
 });

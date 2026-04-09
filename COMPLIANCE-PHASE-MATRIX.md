@@ -10,7 +10,7 @@ Status legend: **Done** = implemented in codebase, **Partial** = scaffolded/inco
 | 3 | 4 (shared API) | Partial | `/home/runner/work/ecom-system/ecom-system/apps/api/src/index.ts`, `/home/runner/work/ecom-system/ecom-system/apps/api/src/routes/**/*` (role matrix enforcement tightened for products/orders/blog/redirects/landing pages/A-B tests and site status handling) |
 | 4 | 5 (Meesho import) | Partial | `/home/runner/work/ecom-system/ecom-system/apps/api/src/routes/import/meesho.ts`, `/home/runner/work/ecom-system/ecom-system/apps/api/src/services/meeshoScraper.ts`, `/home/runner/work/ecom-system/ecom-system/apps/api/src/services/mediaStore.ts` (review filtering + product/review/media persistence + AI job queueing scaffolded) |
 | 5 | 6 (AI model management + generation) | Partial | `/home/runner/work/ecom-system/ecom-system/apps/api/src/routes/ai/**/*`, `/home/runner/work/ecom-system/ecom-system/apps/api/src/services/ai/**/*` (image/video generation now lands in `needs_approval`; approvals persist AI-generated media to `product_images`/`product_videos`) |
-| 6 | 7 (AI SEO agent) | Partial | `/home/runner/work/ecom-system/ecom-system/apps/api/src/routes/seo/agent.ts`, `/home/runner/work/ecom-system/ecom-system/apps/api/src/workers/seoWorker.ts` |
+| 6 | 7 (AI SEO agent) | Partial | `/home/runner/work/ecom-system/ecom-system/apps/api/src/routes/seo/agent.ts`, `/home/runner/work/ecom-system/ecom-system/apps/api/src/workers/seoWorker.ts`, `/home/runner/work/ecom-system/ecom-system/apps/api/src/services/seoAgent.ts`, `/home/runner/work/ecom-system/ecom-system/apps/api/src/services/seoAudit.ts` (cron schedules + run-now APIs + approval-queued seo_meta/content_brief jobs + monthly report queueing) |
 | 7 | 8 (Heatmaps/session intelligence) | Partial | `/home/runner/work/ecom-system/ecom-system/apps/api/src/routes/heatmaps.ts`, `/home/runner/work/ecom-system/ecom-system/packages/db/prisma/schema.prisma` (`heatmap_events`) |
 | 8 | 9 (Ads command centre) | Partial | `/home/runner/work/ecom-system/ecom-system/apps/api/src/routes/ads.ts`, `/home/runner/work/ecom-system/ecom-system/apps/api/src/index.ts` (`/api/ads/overview`) |
 | 9 | 10 (Landing pages + A/B tests) | Partial | `/home/runner/work/ecom-system/ecom-system/apps/api/src/routes/landingPages.ts`, `/home/runner/work/ecom-system/ecom-system/apps/api/src/routes/abTests.ts` |
@@ -38,3 +38,16 @@ Status legend: **Done** = implemented in codebase, **Partial** = scaffolded/inco
 - AI job approval flow now applies approved generated media to product entities:
   - image jobs create `product_images` with `source = "ai_generated"` and set primary image
   - video jobs create `product_videos` with `source = "ai_generated"`
+
+## Phase 6 continuation delivered in this change
+
+- Implemented actionable SEO audit scoring and issue/suggestion generation from catalog/blog metadata health.
+- Added SEO agent service job runners for:
+  - nightly SEO meta queueing (`seo_meta`, `needs_approval`)
+  - weekly technical audit snapshots in `seo_audit_results`
+  - monday competitor-gap content brief queueing (`content_brief`, `needs_approval`)
+  - monthly SEO report generation + email queue event
+- Added API endpoints:
+  - `GET /api/:siteId/seo/agent/scheduled-jobs`
+  - `POST /api/:siteId/seo/agent/run-now` (`nightly|weekly|monday|monthly`)
+- Bootstrapped cron-based SEO worker startup in API runtime (`node-cron`, env-configurable schedule overrides).
