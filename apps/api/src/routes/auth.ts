@@ -1,5 +1,4 @@
 import { Router } from 'express';
-import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import { z } from 'zod';
 
@@ -11,8 +10,6 @@ router.post('/login', async (req, res) => {
   if (!parsed.success) {
     return res.status(400).json({ ok: false, message: 'Invalid payload', issues: parsed.error.issues });
   }
-
-  await bcrypt.hash('placeholder', 10);
 
   const secret = process.env.JWT_SECRET || 'dev-secret-change-me';
   const claims = { sub: 'placeholder-user', role: 'super_admin', sites: [] };

@@ -1,6 +1,7 @@
 import 'dotenv/config';
 import express from 'express';
 import cors from 'cors';
+import rateLimit from 'express-rate-limit';
 import authRoutes from './routes/auth';
 import sitesRoutes from './routes/sites';
 import productsRoutes from './routes/products';
@@ -37,10 +38,11 @@ const app = express();
 app.use(cors());
 app.use(express.json({ limit: '5mb' }));
 app.use(apiRateLimit);
+const authRateLimit = rateLimit({ windowMs: 60_000, limit: 20, standardHeaders: 'draft-7', legacyHeaders: false });
 
 app.get('/api/health', (_req, res) => res.json({ ok: true, service: 'api', time: new Date().toISOString() }));
 
-app.use('/auth', authRoutes);
+app.use('/auth', authRateLimit, authRoutes);
 
 app.use('/api', authenticate);
 app.use('/api/sites', sitesRoutes);

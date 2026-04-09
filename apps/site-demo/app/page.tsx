@@ -1,10 +1,8 @@
-import { generateMetadata } from '@ecom/seo';
-
-export const metadata = generateMetadata({
+export const metadata = {
   title: 'Demo Store',
   description: 'Demo multi-site storefront scaffold',
-  canonicalUrl: 'https://example.com'
-});
+  alternates: { canonical: 'https://example.com' }
+};
 
 export default function SiteHome() {
   return (
