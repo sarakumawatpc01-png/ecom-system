@@ -1,0 +1,36 @@
+{
+  "description": "Import template for Uptime Kuma monitor definitions per site",
+  "interval_seconds": 60,
+  "max_retries": 2,
+  "alert_channels": ["email", "telegram_optional"],
+  "monitors": [
+    {
+      "name": "homepage",
+      "type": "http",
+      "url_template": "https://{domain}/",
+      "method": "GET",
+      "expected_status": [200]
+    },
+    {
+      "name": "product_page",
+      "type": "http",
+      "url_template": "https://{domain}/products/{sample_slug}",
+      "method": "GET",
+      "expected_status": [200]
+    },
+    {
+      "name": "category_page",
+      "type": "http",
+      "url_template": "https://{domain}/categories/{sample_category}",
+      "method": "GET",
+      "expected_status": [200]
+    },
+    {
+      "name": "api_health",
+      "type": "http",
+      "url_template": "https://{domain}/api/health",
+      "method": "GET",
+      "expected_status": [200]
+    }
+  ]
+}

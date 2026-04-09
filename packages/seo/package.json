@@ -1,0 +1,14 @@
+{
+  "name": "@ecom/seo",
+  "version": "1.0.0",
+  "private": true,
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "dev": "tsc -w -p tsconfig.json",
+    "lint": "echo 'no lint configured for @ecom/seo'",
+    "test": "echo 'no tests configured for @ecom/seo'",
+    "typecheck": "tsc -p tsconfig.json --noEmit"
+  }
+}
