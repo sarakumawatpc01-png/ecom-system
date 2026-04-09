@@ -76,6 +76,7 @@ This repository now contains a production-oriented baseline architecture and rou
 ## Compliance tracking
 
 - Phase-by-phase compliance status is tracked in `/home/runner/work/ecom-system/ecom-system/COMPLIANCE-PHASE-MATRIX.md`.
+- Production readiness runbook/evidence workflow is tracked in `/home/runner/work/ecom-system/ecom-system/PRODUCTION-READINESS-AUDIT.md`.
 - Infra runtime scripts:
   - Backup: `/home/runner/work/ecom-system/ecom-system/scripts/backup.sh`
   - Restore: `/home/runner/work/ecom-system/ecom-system/scripts/restore-backup.sh`
@@ -86,3 +87,5 @@ This repository now contains a production-oriented baseline architecture and rou
   - Logrotate installer: `/home/runner/work/ecom-system/ecom-system/scripts/setup-logrotate.sh`
   - Site scaffold + brief + SQL template: `/home/runner/work/ecom-system/ecom-system/scripts/new-site.sh`
   - Site deploy helper: `/home/runner/work/ecom-system/ecom-system/scripts/deploy-site.sh`
+  - Deep infra audit API: `GET /api/infra/audit/deep`
+  - Per-site prelaunch evidence API: `GET /api/:siteId/prelaunch/checklist`
