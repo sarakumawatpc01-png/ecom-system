@@ -33,7 +33,8 @@ const toPrice = (value: unknown, fallback = 0) => {
   return Number.isFinite(num) && num >= 0 ? num : fallback;
 };
 
-const hasMeeshoKeyword = (review: ScrapedMeeshoReview) => /meesho/i.test(String(review.body || ''));
+const reviewText = (review: ScrapedMeeshoReview) => String(review.text || review.body || '');
+const hasMeeshoKeyword = (review: ScrapedMeeshoReview) => /meesho/i.test(reviewText(review));
 
 const queueImportAiJobs = async (siteId: string, productId: string, opts: { rewrite: boolean; image: boolean }) => {
   if (opts.rewrite) {
@@ -178,8 +179,8 @@ const importSingleProduct = async (
         author_name: review.author_name || 'Verified Buyer',
         rating: Math.max(1, Math.min(5, Number(review.rating || 5))),
         title: review.title || null,
-        body: review.body || null,
-        original_body: review.body || null,
+        body: reviewText(review) || null,
+        original_body: reviewText(review) || null,
         source: 'meesho',
         source_id: review.source_id || null,
         status: options.autoApproveReviews ? 'approved' : 'pending',

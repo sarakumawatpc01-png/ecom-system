@@ -11,6 +11,7 @@ export type ScrapedMeeshoReview = {
   author_name?: string;
   rating?: number;
   title?: string;
+  text?: string;
   body?: string;
   source_id?: string;
   images?: string[];

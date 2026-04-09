@@ -19,7 +19,18 @@ const allowedExtensions = new Set(['jpg', 'jpeg', 'png', 'webp', 'gif', 'svg', '
 const allowedMimePrefixes = ['image/', 'video/'];
 const allowedMimeExact = new Set(['application/pdf']);
 const sanitizeSegment = (value: string) => value.replace(/[^a-zA-Z0-9-_]/g, '');
-const isSafeUrl = (value: string) => /^https?:\/\//i.test(value);
+const privateIpPattern =
+  /^(localhost|127\.|0\.0\.0\.0|10\.|172\.(1[6-9]|2\d|3[0-1])\.|192\.168\.|169\.254\.|::1$|fc00:|fd00:)/i;
+const isSafeUrl = (value: string) => {
+  try {
+    const url = new URL(value);
+    if (!['http:', 'https:'].includes(url.protocol)) return false;
+    if (privateIpPattern.test(url.hostname)) return false;
+    return true;
+  } catch {
+    return false;
+  }
+};
 const getAllowedExtension = (filename: string) => {
   const extRaw = (filename.split('.').pop() || 'bin').replace(/[^a-zA-Z0-9]/g, '').toLowerCase() || 'bin';
   if (!allowedExtensions.has(extRaw)) {
