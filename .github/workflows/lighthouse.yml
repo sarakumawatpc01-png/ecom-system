@@ -53,6 +53,10 @@ jobs:
         run: |
           if [ -f /tmp/site-demo.pid ]; then
             server_pid=$(cat /tmp/site-demo.pid)
-            pkill -TERM -P "$server_pid" || echo "No child processes found for PID $server_pid"
             kill -TERM "$server_pid" || echo "Server PID $server_pid already stopped"
+            pkill -TERM -P "$server_pid" || echo "No child processes found for PID $server_pid"
           fi
+
+      - name: Show site-demo logs
+        if: always()
+        run: cat /tmp/site-demo.log || true
