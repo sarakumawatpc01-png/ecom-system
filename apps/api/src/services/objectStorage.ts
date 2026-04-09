@@ -88,4 +88,3 @@ export const buildMediaUrl = (objectName: string) => {
   const proto = useSSL ? 'https' : 'http';
   return `${proto}://${endpoint}:${port}/${bucket}/${objectName}`;
 };
-
