@@ -25,10 +25,12 @@ jobs:
         run: npm run build --workspace @ecom/site-demo
 
       - name: Start site-demo
-        run: npm run start --workspace @ecom/site-demo &
+        run: |
+          npm run start --workspace @ecom/site-demo > /tmp/site-demo.log 2>&1 &
+          echo $! > /tmp/site-demo.pid
 
       - name: Wait for site-demo
-        run: npx wait-on http://127.0.0.1:3000
+        run: npx wait-on --timeout 60000 http://127.0.0.1:3000
 
       - name: Run Lighthouse assertions
         uses: treosh/lighthouse-ci-action@v12
@@ -37,3 +39,10 @@ jobs:
           uploadArtifacts: true
           temporaryPublicStorage: true
           runs: 1
+
+      - name: Stop site-demo
+        if: always()
+        run: |
+          if [ -f /tmp/site-demo.pid ]; then
+            kill "$(cat /tmp/site-demo.pid)" || true
+          fi
