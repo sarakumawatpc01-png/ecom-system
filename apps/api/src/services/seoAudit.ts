@@ -17,15 +17,17 @@ export const runSeoAudit = async (siteId: string) => {
   const issues: string[] = [];
   const suggestions: string[] = [];
 
-  const productMissingSeo = products.filter((product) => !product.seo_title || !product.seo_description).length;
-  const productThinDescription = products.filter((product) => (product.description || '').trim().length < 120).length;
+  const productMissingSeo = products.filter((product: (typeof products)[number]) => !product.seo_title || !product.seo_description).length;
+  const productThinDescription = products.filter((product: (typeof products)[number]) => (product.description || '').trim().length < 120).length;
   const duplicateProductTitles =
     products.length -
-    new Set(products.map((product) => (product.seo_title || product.name || '').trim().toLowerCase()).filter(Boolean)).size;
+    new Set(
+      products.map((product: (typeof products)[number]) => (product.seo_title || product.name || '').trim().toLowerCase()).filter(Boolean)
+    ).size;
 
-  const publishedBlogs = blogs.filter((post) => post.status === 'published');
-  const blogMissingMeta = publishedBlogs.filter((post) => !post.meta_title || !post.meta_desc).length;
-  const blogThinContent = publishedBlogs.filter((post) => (post.content || '').trim().length < 300).length;
+  const publishedBlogs = blogs.filter((post: (typeof blogs)[number]) => post.status === 'published');
+  const blogMissingMeta = publishedBlogs.filter((post: (typeof publishedBlogs)[number]) => !post.meta_title || !post.meta_desc).length;
+  const blogThinContent = publishedBlogs.filter((post: (typeof publishedBlogs)[number]) => (post.content || '').trim().length < 300).length;
 
   if (productMissingSeo > 0) issues.push(`${productMissingSeo} product pages are missing SEO title or description.`);
   if (productThinDescription > 0) issues.push(`${productThinDescription} product pages have thin descriptions.`);

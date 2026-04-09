@@ -1,6 +1,6 @@
-import cron from 'node-cron';
 import { db } from '../lib/db';
 import { runSeoAgentJob } from '../services/seoAgent';
+const cron = require('node-cron') as { schedule: (expression: string, callback: () => void) => void };
 
 type SeoScheduleType = 'nightly' | 'weekly' | 'monday' | 'monthly';
 

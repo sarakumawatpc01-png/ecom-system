@@ -25,7 +25,7 @@ export const runSeoNightlyMetaRefresh = async (siteId: string) => {
     take: 200
   });
 
-  const targets = products.filter((product) => {
+  const targets = products.filter((product: (typeof products)[number]) => {
     const missingMeta = !product.seo_title || !product.seo_description;
     const weakDesc = (product.description || '').trim().length < 120;
     return missingMeta || weakDesc;
