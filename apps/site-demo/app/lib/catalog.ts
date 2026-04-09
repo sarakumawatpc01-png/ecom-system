@@ -1,5 +1,4 @@
 import { getBlogPosts, getCategories, getProducts } from '@ecom/api-client';
-import { db } from '@ecom/db';
 import { apiBase, siteId } from './site';
 
 type SlugItem = { slug: string };
@@ -29,22 +28,5 @@ export const getCatalogSlugs = async () => {
     };
   }
 
-  if (!siteId) {
-    return { products: [], categories: [], blogPosts: [] };
-  }
-
-  try {
-    const [products, categories, blogPosts] = await Promise.all([
-      db.products.findMany({ where: { site_id: siteId, is_deleted: false }, select: { slug: true }, take: 500 }),
-      db.categories.findMany({ where: { site_id: siteId, is_active: true }, select: { slug: true }, take: 500 }),
-      db.blog_posts.findMany({ where: { site_id: siteId, status: 'published' }, select: { slug: true }, take: 500 })
-    ]);
-    return {
-      products: products.map((item) => item.slug),
-      categories: categories.map((item) => item.slug),
-      blogPosts: blogPosts.map((item) => item.slug)
-    };
-  } catch {
-    return { products: [], categories: [], blogPosts: [] };
-  }
+  return { products: [], categories: [], blogPosts: [] };
 };

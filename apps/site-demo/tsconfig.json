@@ -1,6 +1,15 @@
 {
   "extends": "../../tsconfig.base.json",
   "compilerOptions": {
+    "baseUrl": ".",
+    "paths": {
+      "@ecom/seo": [
+        "../../packages/seo/src"
+      ],
+      "@ecom/api-client": [
+        "../../packages/api-client/src"
+      ]
+    },
     "module": "ESNext",
     "moduleResolution": "Bundler",
     "jsx": "preserve",
