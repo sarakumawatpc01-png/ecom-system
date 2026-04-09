@@ -5,7 +5,7 @@ Status legend: **Done** = implemented in codebase, **Partial** = scaffolded/inco
 | Phase | Prompt Parts | Status | Evidence |
 |---|---|---|---|
 | 0 | 1–20 | Done | `/home/runner/work/ecom-system/ecom-system/COMPLIANCE-PHASE-MATRIX.md` |
-| 1 | 2, 14, 19 (infra/runtime) | Partial | `/home/runner/work/ecom-system/ecom-system/ecosystem.config.js`, `/home/runner/work/ecom-system/ecom-system/scripts/backup.sh`, `/home/runner/work/ecom-system/ecom-system/scripts/restore-backup.sh`, `/home/runner/work/ecom-system/ecom-system/scripts/ssl-renew.sh`, `/home/runner/work/ecom-system/ecom-system/scripts/install-cron.sh` |
+| 1 | 2, 14, 19 (infra/runtime) | Done | `/home/runner/work/ecom-system/ecom-system/ecosystem.config.js`, `/home/runner/work/ecom-system/ecom-system/scripts/backup.sh`, `/home/runner/work/ecom-system/ecom-system/scripts/restore-backup.sh`, `/home/runner/work/ecom-system/ecom-system/scripts/ssl-renew.sh`, `/home/runner/work/ecom-system/ecom-system/scripts/install-cron.sh`, `/home/runner/work/ecom-system/ecom-system/scripts/generate-nginx-site-config.sh`, `/home/runner/work/ecom-system/ecom-system/scripts/templates/nginx-site.conf.template`, `/home/runner/work/ecom-system/ecom-system/scripts/setup-logrotate.sh` |
 | 2 | 3 (database schema) | Partial | `/home/runner/work/ecom-system/ecom-system/packages/db/prisma/schema.prisma` (expanded fields/enums/indexes), regenerated client via `packages/db prisma:generate` |
 | 3 | 4 (shared API) | Partial | `/home/runner/work/ecom-system/ecom-system/apps/api/src/index.ts`, `/home/runner/work/ecom-system/ecom-system/apps/api/src/routes/**/*` (role matrix enforcement tightened for products/orders/blog/redirects/landing pages/A-B tests and site status handling) |
 | 4 | 5 (Meesho import) | Partial | `/home/runner/work/ecom-system/ecom-system/apps/api/src/routes/import/meesho.ts`, `/home/runner/work/ecom-system/ecom-system/apps/api/src/services/meeshoScraper.ts`, `/home/runner/work/ecom-system/ecom-system/apps/api/src/services/mediaStore.ts` (review filtering + product/review/media persistence + AI job queueing scaffolded) |
@@ -17,7 +17,7 @@ Status legend: **Done** = implemented in codebase, **Partial** = scaffolded/inco
 | 10 | 11 (Super admin panel) | Partial | `/home/runner/work/ecom-system/ecom-system/apps/super-admin` |
 | 11 | 12 (Per-site admin panels) | Partial | `/home/runner/work/ecom-system/ecom-system/apps/per-site-admin` |
 | 12 | 13 (Public Next.js sites) | Partial | `/home/runner/work/ecom-system/ecom-system/apps/site-demo` |
-| 13 | 15 (Deployment workflow) | Partial | `/home/runner/work/ecom-system/ecom-system/scripts/new-site.sh`, `/home/runner/work/ecom-system/ecom-system/scripts/deploy-site.sh` |
+| 13 | 15 (Deployment workflow) | Done | `/home/runner/work/ecom-system/ecom-system/scripts/new-site.sh`, `/home/runner/work/ecom-system/ecom-system/scripts/deploy-site.sh`, `/home/runner/work/ecom-system/ecom-system/scripts/generate-nginx-site-config.sh`, `/home/runner/work/ecom-system/ecom-system/scripts/templates/nginx-site.conf.template`, `/home/runner/work/ecom-system/ecom-system/briefs/*.md`, `/home/runner/work/ecom-system/ecom-system/briefs/*.sql` |
 | 14 | 16 (Monitoring + CI/CD) | Done | `/home/runner/work/ecom-system/ecom-system/.github/workflows/ci.yml`, `/home/runner/work/ecom-system/ecom-system/.github/workflows/lighthouse.yml`, `/home/runner/work/ecom-system/ecom-system/apps/site-demo/.lighthouserc.js`, `/home/runner/work/ecom-system/ecom-system/monitoring/uptime-kuma/monitors.template.json`, `/home/runner/work/ecom-system/ecom-system/apps/api/src/services/monitoring/sentry.ts`, `/home/runner/work/ecom-system/ecom-system/apps/api/src/services/monitoring/gsc.ts`, `/home/runner/work/ecom-system/ecom-system/apps/api/src/workers/gscWorker.ts`, `/home/runner/work/ecom-system/ecom-system/apps/*/sentry*.ts` |
 | 15 | 17–18 (Merchant feed + email) | Done | `/home/runner/work/ecom-system/ecom-system/apps/api/src/routes/feed/googleMerchant.ts`, `/home/runner/work/ecom-system/ecom-system/apps/api/src/services/emailService.ts`, `/home/runner/work/ecom-system/ecom-system/apps/api/src/queues/emailQueue.ts`, `/home/runner/work/ecom-system/ecom-system/apps/api/src/workers/emailWorker.ts`, `/home/runner/work/ecom-system/ecom-system/packages/db/prisma/schema.prisma` (`email_logs`) |
 | 16 | 19 (security finalization) | Done | `/home/runner/work/ecom-system/ecom-system/apps/api/src/routes/auth.ts`, `/home/runner/work/ecom-system/ecom-system/apps/api/src/lib/cacheStore.ts`, `/home/runner/work/ecom-system/ecom-system/apps/api/src/index.ts` (strict CORS), `/home/runner/work/ecom-system/ecom-system/apps/api/src/middleware/activityLogger.ts`, `/home/runner/work/ecom-system/ecom-system/packages/db/prisma/schema.prisma` (`admin_activity_logs`) |
@@ -81,3 +81,13 @@ Status legend: **Done** = implemented in codebase, **Partial** = scaffolded/inco
   - Added admin write-action logging into `admin_activity_logs`.
 - **Part 20 (Pre-launch checklist)**:
   - Added full checklist artifact and API evidence endpoint for per-site launch readiness status.
+
+## Additional infra/deployment completion delivered in this change
+
+- **Part 2 (Infrastructure setup hardening)**:
+  - Added reusable Nginx site config template with HTTPS redirect, TLS headers, and gzip settings.
+  - Added generator script for domain+port Nginx site config output.
+  - Added logrotate installer script targeting 30 daily rotations and 50MB max file size.
+- **Part 15 (Deployment workflow automation)**:
+  - Enhanced `new-site.sh` to also scaffold a site brief and SQL registration template.
+  - Enhanced `deploy-site.sh` to support optional domain-driven Nginx config generation and certbot handoff.

@@ -81,3 +81,8 @@ This repository now contains a production-oriented baseline architecture and rou
   - Restore: `/home/runner/work/ecom-system/ecom-system/scripts/restore-backup.sh`
   - SSL renew: `/home/runner/work/ecom-system/ecom-system/scripts/ssl-renew.sh`
   - Cron install: `/home/runner/work/ecom-system/ecom-system/scripts/install-cron.sh`
+  - Nginx config generator: `/home/runner/work/ecom-system/ecom-system/scripts/generate-nginx-site-config.sh`
+  - Nginx template: `/home/runner/work/ecom-system/ecom-system/scripts/templates/nginx-site.conf.template`
+  - Logrotate installer: `/home/runner/work/ecom-system/ecom-system/scripts/setup-logrotate.sh`
+  - Site scaffold + brief + SQL template: `/home/runner/work/ecom-system/ecom-system/scripts/new-site.sh`
+  - Site deploy helper: `/home/runner/work/ecom-system/ecom-system/scripts/deploy-site.sh`

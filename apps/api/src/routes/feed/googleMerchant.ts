@@ -1,5 +1,4 @@
 import { Router } from 'express';
-import { Prisma } from '@prisma/client';
 import { db } from '../../lib/db';
 import { cacheGet, cacheSet } from '../../lib/cacheStore';
 import { injectSiteScope } from '../../middleware/siteScope';
@@ -17,7 +16,11 @@ const xmlEscape = (value: string) =>
     .replace(/"/g, '&quot;')
     .replace(/'/g, '&apos;');
 
-const asMoney = (value: Prisma.Decimal | null | undefined) => (value ? Number(value).toFixed(2) : '0.00');
+const asMoney = (value: unknown) => {
+  if (value === null || value === undefined) return '0.00';
+  const numeric = Number(value);
+  return Number.isFinite(numeric) ? numeric.toFixed(2) : '0.00';
+};
 
 router.get('/google-merchant', async (req, res) => {
   const siteId = getSiteId(req);
