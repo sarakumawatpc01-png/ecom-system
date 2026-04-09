@@ -1,4 +1,4 @@
-import { generateMetadata } from '@ecom/seo/src/generateMetadata';
+import { generateMetadata } from '@ecom/seo';
 
 export const metadata = generateMetadata({
   title: 'Demo Store',
