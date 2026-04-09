@@ -37,3 +37,12 @@ Key variables used by current scaffold:
 ## Notes
 
 This repository now contains a production-oriented baseline architecture and route/schema scaffolding. Business logic integrations (payments, AI providers, scraping, analytics sync, media pipelines) are intentionally scaffolded and should be completed per deployment requirements.
+
+## Compliance tracking
+
+- Phase-by-phase compliance status is tracked in `/home/runner/work/ecom-system/ecom-system/COMPLIANCE-PHASE-MATRIX.md`.
+- Infra runtime scripts:
+  - Backup: `/home/runner/work/ecom-system/ecom-system/scripts/backup.sh`
+  - Restore: `/home/runner/work/ecom-system/ecom-system/scripts/restore-backup.sh`
+  - SSL renew: `/home/runner/work/ecom-system/ecom-system/scripts/ssl-renew.sh`
+  - Cron install: `/home/runner/work/ecom-system/ecom-system/scripts/install-cron.sh`
