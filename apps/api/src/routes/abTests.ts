@@ -69,7 +69,7 @@ router.get('/', async (req, res) => {
     orderBy: { created_at: 'desc' },
     take: 100
   });
-  const data = tests.map((test) => {
+  const data = tests.map((test: any) => {
     const variants = [...test.variants].sort((a, b) => (b.visitors > a.visitors ? 1 : -1));
     const [first, second] = variants;
     const confidence = first && second ? computeTwoVariantConfidence(first, second) : 0;
@@ -180,7 +180,7 @@ router.put('/:id/declare-winner', requireRole('super_admin', 'site_admin'), asyn
   if (!winnerVariantId) return res.status(400).json({ ok: false, message: 'winner_variant_id is required' });
   const test = await db.ab_tests.findFirst({ where: { site_id: siteId, id: req.params.id }, include: { variants: true } });
   if (!test) return res.status(404).json({ ok: false, message: 'Test not found' });
-  const winner = test.variants.find((variant) => variant.id === winnerVariantId);
+  const winner = test.variants.find((variant: any) => variant.id === winnerVariantId);
   if (!winner) return res.status(400).json({ ok: false, message: 'winner_variant_id does not belong to this test' });
   const ordered = [...test.variants].sort((a, b) => b.conversions - a.conversions);
   const confidence = ordered.length >= 2 ? computeTwoVariantConfidence(ordered[0], ordered[1]) : 0;
@@ -253,7 +253,7 @@ router.post('/:id/track', async (req, res) => {
   if (!variantId) return res.status(400).json({ ok: false, message: 'variant_id is required' });
   const test = await db.ab_tests.findFirst({ where: { site_id: siteId, id: req.params.id }, include: { variants: true } });
   if (!test) return res.status(404).json({ ok: false, message: 'Test not found' });
-  const variant = test.variants.find((item) => item.id === variantId);
+  const variant = test.variants.find((item: any) => item.id === variantId);
   if (!variant) return res.status(400).json({ ok: false, message: 'variant_id does not belong to test' });
   const normalizedEvent = eventType.trim().toLowerCase();
   const shouldCountVisitor = normalizedEvent === 'view';

@@ -42,12 +42,12 @@ router.get('/google', async (req, res) => {
   const siteId = getSiteId(req);
   if (!siteId) return res.status(400).json({ ok: false, message: 'Missing site scope' });
   const orders = await db.orders.findMany({ where: { site_id: siteId, payment_status: 'paid' }, take: 2000 });
-  const attributedOrders = orders.filter((order) => {
+  const attributedOrders = orders.filter((order: any) => {
     const meta = (order.meta || {}) as Record<string, unknown>;
     const utmSource = String(meta.utm_source || '');
     return utmSource.includes('google');
   });
-  const revenue = attributedOrders.reduce((acc, order) => acc + asNumber(order.total), 0);
+  const revenue = attributedOrders.reduce((acc: number, order: any) => acc + asNumber(order.total), 0);
   return res.json({ ok: true, data: { platform: 'google', attributed_orders: attributedOrders.length, revenue, status: 'connected' } });
 });
 
@@ -55,12 +55,12 @@ router.get('/meta', async (req, res) => {
   const siteId = getSiteId(req);
   if (!siteId) return res.status(400).json({ ok: false, message: 'Missing site scope' });
   const orders = await db.orders.findMany({ where: { site_id: siteId, payment_status: 'paid' }, take: 2000 });
-  const attributedOrders = orders.filter((order) => {
+  const attributedOrders = orders.filter((order: any) => {
     const meta = (order.meta || {}) as Record<string, unknown>;
     const utmSource = String(meta.utm_source || '');
     return utmSource.includes('meta') || utmSource.includes('facebook') || utmSource.includes('instagram');
   });
-  const revenue = attributedOrders.reduce((acc, order) => acc + asNumber(order.total), 0);
+  const revenue = attributedOrders.reduce((acc: number, order: any) => acc + asNumber(order.total), 0);
   return res.json({ ok: true, data: { platform: 'meta', attributed_orders: attributedOrders.length, revenue, status: 'connected' } });
 });
 
@@ -79,7 +79,7 @@ router.get('/performance', async (req, res) => {
   ]);
   let googleSpend = 0;
   let metaSpend = 0;
-  spendEvents.forEach((event) => {
+  spendEvents.forEach((event: any) => {
     const payload = (event.payload || {}) as Record<string, unknown>;
     const amount = asNumber(payload.amount);
     const platform = String(payload.platform || '');
@@ -87,7 +87,7 @@ router.get('/performance', async (req, res) => {
     if (platform === 'meta') metaSpend += amount;
   });
   const totalSpend = googleSpend + metaSpend;
-  const revenue = orders.reduce((acc, order) => acc + asNumber(order.total), 0);
+  const revenue = orders.reduce((acc: number, order: any) => acc + asNumber(order.total), 0);
   const roas = totalSpend > 0 ? revenue / totalSpend : 0;
   const cpa = orders.length > 0 ? totalSpend / orders.length : 0;
   const budgetConfig = ((site?.config || {}) as Record<string, unknown>).ad_budgets as Record<string, unknown> | undefined;
@@ -124,7 +124,7 @@ router.get('/recommendations', async (req, res) => {
   const siteId = getSiteId(req);
   if (!siteId) return res.status(400).json({ ok: false, message: 'Missing site scope' });
   const sourceSummary = await db.orders.findMany({ where: { site_id: siteId, payment_status: 'paid' }, take: 2000 });
-  const paidRevenue = sourceSummary.reduce((acc, order) => acc + asNumber(order.total), 0);
+  const paidRevenue = sourceSummary.reduce((acc: number, order: any) => acc + asNumber(order.total), 0);
   return res.json({
     ok: true,
     data: [
@@ -184,8 +184,8 @@ router.get('/utms', async (req, res) => {
     take: 500
   });
   const data = rows
-    .map((row) => ({ id: row.id, created_at: row.created_at, ...(row.payload as Record<string, unknown>) }))
-    .filter((row) => {
+    .map((row: any) => ({ id: row.id, created_at: row.created_at, ...(row.payload as Record<string, unknown>) }))
+    .filter((row: any) => {
       if (req.query.source && row.source !== String(req.query.source)) return false;
       if (req.query.medium && row.medium !== String(req.query.medium)) return false;
       if (req.query.campaign && row.campaign !== String(req.query.campaign)) return false;
@@ -207,7 +207,7 @@ router.get('/budget-tracker', async (req, res) => {
   });
   let googleSpend = 0;
   let metaSpend = 0;
-  spendEvents.forEach((event) => {
+  spendEvents.forEach((event: any) => {
     const payload = (event.payload || {}) as Record<string, unknown>;
     const amount = asNumber(payload.amount);
     if (payload.platform === 'google') googleSpend += amount;
@@ -251,7 +251,7 @@ router.get('/attribution', async (req, res) => {
     take: 5000
   });
   const breakdown: Record<string, { orders: number; revenue: number }> = {};
-  orders.forEach((order) => {
+  orders.forEach((order: any) => {
     const meta = (order.meta || {}) as Record<string, unknown>;
     const source = String(meta.utm_source || meta.source || 'direct');
     const current = breakdown[source] || { orders: 0, revenue: 0 };

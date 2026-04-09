@@ -78,9 +78,9 @@ router.get('/pages', async (req, res) => {
   });
   if (!device || device === 'all') return res.json({ ok: true, data: grouped });
   const enriched = await Promise.all(
-    grouped.map(async (row) => {
+    grouped.map(async (row: any) => {
       const events = await db.heatmap_events.findMany({ where: { site_id: siteId, page_url: row.page_url }, take: 2500 });
-      const count = events.filter((item) => {
+      const count = events.filter((item: any) => {
         const payload = (item.payload || {}) as Record<string, unknown>;
         return payload.device === device;
       }).length;
@@ -105,17 +105,17 @@ router.get('/sessions', async (req, res) => {
     take: 5000
   });
   const sessionMap = new Map<string, (typeof rows)>();
-  rows.forEach((event) => {
+  rows.forEach((event: any) => {
     const current = sessionMap.get(event.session_id) || [];
     current.push(event);
     sessionMap.set(event.session_id, current);
   });
   const sessions = Array.from(sessionMap.entries()).map(([sessionId, events]) => {
-    const payloads = events.map((event) => ((event.payload || {}) as Record<string, unknown>));
-    const hasPurchase = events.some((event) => ['purchase', 'order_complete', 'ab_purchase'].includes(event.event_type));
-    const pageViews = events.filter((event) => event.event_type === 'page_view').length;
-    const durationSec = payloads.reduce((acc, payload) => acc + (Number(payload.duration_sec || 0) || 0), 0);
-    const rageClicks = payloads.filter((payload) => Boolean(payload.rage_click)).length;
+    const payloads = events.map((event: any) => ((event.payload || {}) as Record<string, unknown>));
+    const hasPurchase = events.some((event: any) => ['purchase', 'order_complete', 'ab_purchase'].includes(event.event_type));
+    const pageViews = events.filter((event: any) => event.event_type === 'page_view').length;
+    const durationSec = payloads.reduce((acc: number, payload: any) => acc + (Number(payload.duration_sec || 0) || 0), 0);
+    const rageClicks = payloads.filter((payload: any) => Boolean(payload.rage_click)).length;
     return {
       session_id: sessionId,
       events: events.length,
@@ -124,9 +124,9 @@ router.get('/sessions', async (req, res) => {
       bounced: !hasPurchase && pageViews <= 1,
       duration_sec: durationSec,
       rage_clicks: rageClicks,
-      device: String(payloads.find((payload) => payload.device)?.device || ''),
-      browser: String(payloads.find((payload) => payload.browser)?.browser || ''),
-      traffic_source: String(payloads.find((payload) => payload.traffic_source)?.traffic_source || ''),
+      device: String(payloads.find((payload: any) => payload.device)?.device || ''),
+      browser: String(payloads.find((payload: any) => payload.browser)?.browser || ''),
+      traffic_source: String(payloads.find((payload: any) => payload.traffic_source)?.traffic_source || ''),
       started_at: events[events.length - 1]?.created_at,
       ended_at: events[0]?.created_at
     };
@@ -214,7 +214,7 @@ router.get('/insights/ai', async (req, res) => {
     db.orders.count({ where: { site_id: siteId } }),
     db.heatmap_events.findMany({ where: { site_id: siteId }, take: 5000, orderBy: { created_at: 'desc' } })
   ]);
-  const rageClicks = rageEvents.filter((event) => {
+  const rageClicks = rageEvents.filter((event: any) => {
     const payload = (event.payload || {}) as Record<string, unknown>;
     return Boolean(payload.rage_click);
   }).length;

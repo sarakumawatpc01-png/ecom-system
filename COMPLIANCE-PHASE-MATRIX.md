@@ -11,9 +11,9 @@ Status legend: **Done** = implemented in codebase, **Partial** = scaffolded/inco
 | 4 | 5 (Meesho import) | Partial | `/home/runner/work/ecom-system/ecom-system/apps/api/src/routes/import/meesho.ts`, `/home/runner/work/ecom-system/ecom-system/apps/api/src/services/meeshoScraper.ts`, `/home/runner/work/ecom-system/ecom-system/apps/api/src/services/mediaStore.ts` (review filtering + product/review/media persistence + AI job queueing scaffolded) |
 | 5 | 6 (AI model management + generation) | Partial | `/home/runner/work/ecom-system/ecom-system/apps/api/src/routes/ai/**/*`, `/home/runner/work/ecom-system/ecom-system/apps/api/src/services/ai/**/*` (image/video generation now lands in `needs_approval`; approvals persist AI-generated media to `product_images`/`product_videos`) |
 | 6 | 7 (AI SEO agent) | Partial | `/home/runner/work/ecom-system/ecom-system/apps/api/src/routes/seo/agent.ts`, `/home/runner/work/ecom-system/ecom-system/apps/api/src/workers/seoWorker.ts`, `/home/runner/work/ecom-system/ecom-system/apps/api/src/services/seoAgent.ts`, `/home/runner/work/ecom-system/ecom-system/apps/api/src/services/seoAudit.ts` (cron schedules + run-now APIs + approval-queued seo_meta/content_brief jobs + monthly report queueing) |
-| 7 | 8 (Heatmaps/session intelligence) | Partial | `/home/runner/work/ecom-system/ecom-system/apps/api/src/routes/heatmaps.ts`, `/home/runner/work/ecom-system/ecom-system/packages/db/prisma/schema.prisma` (`heatmap_events`) |
-| 8 | 9 (Ads command centre) | Partial | `/home/runner/work/ecom-system/ecom-system/apps/api/src/routes/ads.ts`, `/home/runner/work/ecom-system/ecom-system/apps/api/src/index.ts` (`/api/ads/overview`) |
-| 9 | 10 (Landing pages + A/B tests) | Partial | `/home/runner/work/ecom-system/ecom-system/apps/api/src/routes/landingPages.ts`, `/home/runner/work/ecom-system/ecom-system/apps/api/src/routes/abTests.ts` |
+| 7 | 8 (Heatmaps/session intelligence) | Partial | `/home/runner/work/ecom-system/ecom-system/apps/api/src/routes/heatmaps.ts`, `/home/runner/work/ecom-system/ecom-system/packages/db/prisma/schema.prisma` (`heatmap_events`) — added event ingestion, session filters (converted/bounced/device/source/rage clicks), and AI insight summary API |
+| 8 | 9 (Ads command centre) | Partial | `/home/runner/work/ecom-system/ecom-system/apps/api/src/routes/ads.ts`, `/home/runner/work/ecom-system/ecom-system/apps/api/src/index.ts` (`/api/ads/overview`) — added performance, budget tracker, attribution breakdown, and persistent UTM builder/history APIs |
+| 9 | 10 (Landing pages + A/B tests) | Partial | `/home/runner/work/ecom-system/ecom-system/apps/api/src/routes/landingPages.ts`, `/home/runner/work/ecom-system/ecom-system/apps/api/src/routes/abTests.ts` — expanded A/B constraints (2–5 variants, split validation), live metrics, significance/confidence bands, and declare-winner flow |
 | 10 | 11 (Super admin panel) | Partial | `/home/runner/work/ecom-system/ecom-system/apps/super-admin` |
 | 11 | 12 (Per-site admin panels) | Partial | `/home/runner/work/ecom-system/ecom-system/apps/per-site-admin` |
 | 12 | 13 (Public Next.js sites) | Partial | `/home/runner/work/ecom-system/ecom-system/apps/site-demo` |
@@ -91,3 +91,18 @@ Status legend: **Done** = implemented in codebase, **Partial** = scaffolded/inco
 - **Part 15 (Deployment workflow automation)**:
   - Enhanced `new-site.sh` to also scaffold a site brief and SQL registration template.
   - Enhanced `deploy-site.sh` to support optional domain-driven Nginx config generation and certbot handoff.
+
+## Parts 8–10 API continuation delivered in this change
+
+- **Part 8 (Heatmaps & session intelligence)**:
+  - Added ingestion API for heatmap/session events with device/browser/source/rage-click metadata.
+  - Added richer session filters (converted, bounced, device, traffic source, duration, rage-click).
+  - Added AI-backed plain-English insights endpoint for conversion analysis.
+- **Part 9 (Ads command centre)**:
+  - Added performance dashboard API payload with spend/revenue/ROAS/CPA breakdown.
+  - Added budget tracker and attribution breakdown APIs.
+  - Added full UTM builder API (campaign/source/medium/content/term), generated URL/QR, and persistent history retrieval.
+- **Part 10 (Landing pages + A/B tests)**:
+  - Enforced A/B creation constraints (2–5 variants, success metrics, traffic split validation).
+  - Added list/results payloads with conversion-rate, revenue-per-visitor, and confidence-band/significance metrics.
+  - Added resume and declare-winner workflows, including winner publishing and confidence gating.
