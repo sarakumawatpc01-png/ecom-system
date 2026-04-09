@@ -1,0 +1,1 @@
+{"name": "ecom-system","version": "1.0.0","description": "E-commerce system","main": "index.js","scripts": {"test": "node --test src"},"author": "sarakumawatpc01-png","license": "ISC"}
