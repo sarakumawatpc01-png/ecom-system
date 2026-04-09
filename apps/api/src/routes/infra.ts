@@ -10,6 +10,7 @@ router.use(requireRole('super_admin'));
 
 const backupDir = process.env.BACKUP_DIR || '/tmp/ecom-backups';
 const logsDir = process.env.APP_LOG_DIR || '/tmp/ecom-logs';
+const logsDirResolved = path.resolve(logsDir);
 
 router.get('/sites/status', async (_req, res) => {
   const sites = await db.sites.findMany({
@@ -78,9 +79,16 @@ router.post('/backups/trigger', async (_req, res) => {
 
 router.get('/logs/:appName', async (req, res) => {
   await mkdir(logsDir, { recursive: true });
-  const appName = req.params.appName.replace(/[^a-zA-Z0-9-_]/g, '');
+  const appNameRaw = String(req.params.appName || '');
+  const appName = appNameRaw.replace(/[^a-zA-Z0-9-_]/g, '');
+  if (appName !== appNameRaw) {
+    return res.status(400).json({ ok: false, message: 'Invalid appName' });
+  }
   if (!appName) return res.status(400).json({ ok: false, message: 'Invalid appName' });
-  const logPath = path.join(logsDir, `${appName}.log`);
+  const logPath = path.resolve(path.join(logsDirResolved, `${appName}.log`));
+  if (!logPath.startsWith(`${logsDirResolved}${path.sep}`)) {
+    return res.status(400).json({ ok: false, message: 'Invalid appName path' });
+  }
   const content = await readFile(logPath, 'utf8').catch(() => '');
   const lines = content.split('\n').filter(Boolean);
   return res.json({ ok: true, data: { app: appName, lines: lines.slice(-500) } });

@@ -24,4 +24,3 @@ export const decryptText = (cipherText: string, secret: string) => {
     return '';
   }
 };
-

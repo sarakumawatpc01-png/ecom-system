@@ -9,4 +9,3 @@ export const toPagination = (req: AppRequest) => {
   const safeLimit = Number.isFinite(limit) && limit > 0 ? limit : 25;
   return { page: safePage, limit: safeLimit, skip: (safePage - 1) * safeLimit };
 };
-

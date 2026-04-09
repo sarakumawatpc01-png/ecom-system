@@ -14,10 +14,28 @@ export type StoredMedia = {
 };
 
 const mediaRoot = process.env.MEDIA_ROOT || '/tmp/ecom-media';
+const mediaRootResolved = path.resolve(mediaRoot);
+const allowedExtensions = new Set(['jpg', 'jpeg', 'png', 'webp', 'gif', 'svg', 'mp4', 'webm', 'pdf', 'txt', 'bin']);
 
-const siteDir = (siteId: string) => path.join(mediaRoot, siteId);
-const recordPath = (siteId: string, id: string) => path.join(siteDir(siteId), `${id}.json`);
-const payloadPath = (siteId: string, id: string, ext: string) => path.join(siteDir(siteId), `${id}.${ext}`);
+const sanitizeSegment = (value: string) => value.replace(/[^a-zA-Z0-9-_]/g, '');
+const isSafeUrl = (value: string) => /^https?:\/\//i.test(value);
+const getAllowedExtension = (filename: string) => {
+  const extRaw = (filename.split('.').pop() || 'bin').replace(/[^a-zA-Z0-9]/g, '').toLowerCase() || 'bin';
+  return allowedExtensions.has(extRaw) ? extRaw : 'bin';
+};
+
+const ensureSafePath = (targetPath: string) => {
+  const resolved = path.resolve(targetPath);
+  if (!resolved.startsWith(`${mediaRootResolved}${path.sep}`)) {
+    throw new Error('Unsafe media path');
+  }
+  return resolved;
+};
+
+const siteDir = (siteId: string) => ensureSafePath(path.join(mediaRootResolved, sanitizeSegment(siteId)));
+const recordPath = (siteId: string, id: string) => ensureSafePath(path.join(siteDir(siteId), `${sanitizeSegment(id)}.json`));
+const payloadPath = (siteId: string, id: string, ext: string) =>
+  ensureSafePath(path.join(siteDir(siteId), `${sanitizeSegment(id)}.${sanitizeSegment(ext)}`));
 
 export const saveUploadedMedia = async (input: {
   siteId: string;
@@ -35,11 +53,11 @@ export const saveUploadedMedia = async (input: {
   if (input.contentBase64) {
     const buffer = Buffer.from(input.contentBase64, 'base64');
     sizeBytes = buffer.length;
-    const ext = (input.filename.split('.').pop() || 'bin').replace(/[^a-zA-Z0-9]/g, '').toLowerCase() || 'bin';
+    const ext = getAllowedExtension(input.filename);
     storedPath = payloadPath(input.siteId, id, ext);
     await writeFile(storedPath, buffer);
   } else {
-    storedPath = input.sourceUrl || '';
+    storedPath = input.sourceUrl && isSafeUrl(input.sourceUrl) ? input.sourceUrl : '';
   }
 
   const record: StoredMedia = {
@@ -57,12 +75,14 @@ export const saveUploadedMedia = async (input: {
 };
 
 export const listMedia = async (siteId: string): Promise<StoredMedia[]> => {
-  await mkdir(siteDir(siteId), { recursive: true });
-  const files = await readdir(siteDir(siteId));
+  const dir = siteDir(siteId);
+  await mkdir(dir, { recursive: true });
+  const files = await readdir(dir);
   const records: StoredMedia[] = [];
   for (const file of files) {
     if (!file.endsWith('.json')) continue;
-    const raw = await readFile(path.join(siteDir(siteId), file), 'utf8');
+    if (file.includes('/') || file.includes('\\')) continue;
+    const raw = await readFile(ensureSafePath(path.join(dir, file)), 'utf8');
     records.push(JSON.parse(raw) as StoredMedia);
   }
   return records.sort((a, b) => (a.createdAt < b.createdAt ? 1 : -1));
@@ -74,10 +94,11 @@ export const deleteMedia = async (siteId: string, id: string): Promise<boolean> 
     const raw = await readFile(metaFile, 'utf8');
     const record = JSON.parse(raw) as StoredMedia;
     await rm(metaFile, { force: true });
-    if (record.path && record.path.startsWith('/')) {
-      const fileInfo = await stat(record.path).catch(() => null);
+    const safeMediaPath = record.path ? ensureSafePath(record.path) : '';
+    if (safeMediaPath) {
+      const fileInfo = await stat(safeMediaPath).catch(() => null);
       if (fileInfo) {
-        await rm(record.path, { force: true });
+        await rm(safeMediaPath, { force: true });
       }
     }
     return true;
@@ -85,4 +106,3 @@ export const deleteMedia = async (siteId: string, id: string): Promise<boolean> 
     return false;
   }
 };
-
