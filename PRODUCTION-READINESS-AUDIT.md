@@ -2,6 +2,8 @@
 
 This runbook is the execution/evidence layer for final go-live readiness.
 
+For end-to-end server bootstrap + deployment command flow, use `/home/runner/work/ecom-system/ecom-system/OPENCODE-SERVER-RUNBOOK.md`.
+
 ## Scope
 
 - **In-repo verifications** (can run in CI/local): lint/build/test, API audit endpoints, workflow health.

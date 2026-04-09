@@ -77,6 +77,7 @@ This repository now contains a production-oriented baseline architecture and rou
 
 - Phase-by-phase compliance status is tracked in `/home/runner/work/ecom-system/ecom-system/COMPLIANCE-PHASE-MATRIX.md`.
 - Production readiness runbook/evidence workflow is tracked in `/home/runner/work/ecom-system/ecom-system/PRODUCTION-READINESS-AUDIT.md`.
+- OpenCode server install + go-live runbook is in `/home/runner/work/ecom-system/ecom-system/OPENCODE-SERVER-RUNBOOK.md`.
 - Infra runtime scripts:
   - Backup: `/home/runner/work/ecom-system/ecom-system/scripts/backup.sh`
   - Restore: `/home/runner/work/ecom-system/ecom-system/scripts/restore-backup.sh`
