@@ -20,7 +20,8 @@ const allowedMimePrefixes = ['image/', 'video/'];
 const allowedMimeExact = new Set(['application/pdf']);
 const sanitizeSegment = (value: string) => value.replace(/[^a-zA-Z0-9-_]/g, '');
 const isPrivateHost = (host: string) => {
-  const normalized = host.trim().toLowerCase().replace(/^\[|\]$/g, '');
+  const trimmedHost = host.trim().toLowerCase();
+  const normalized = trimmedHost.replace(/^\[|\]$/g, '');
   if (normalized === 'localhost' || normalized === '0.0.0.0' || normalized === '::1') return true;
   if (/^127\.\d{1,3}\.\d{1,3}\.\d{1,3}$/.test(normalized)) return true;
   if (/^10\.\d{1,3}\.\d{1,3}\.\d{1,3}$/.test(normalized)) return true;

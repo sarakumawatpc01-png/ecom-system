@@ -16,7 +16,7 @@ const requiredEnvVars = [
 
 const requiredAiTasks = ['copywriting', 'image_generation', 'video_generation'];
 const supportedProviders = new Set(['openai', 'openrouter', 'google', 'claude', 'deepseek', 'sarvam']);
-const normalizeProvider = (provider: string) => (provider === 'anthropic' ? 'claude' : provider);
+const convertAnthropicToClaudeProvider = (provider: string) => (provider === 'anthropic' ? 'claude' : provider);
 
 const asRecord = (value: unknown): Record<string, unknown> => {
   if (!value || typeof value !== 'object' || Array.isArray(value)) return {};
@@ -78,7 +78,7 @@ const runProviderCheck = async (): Promise<CheckResult> => {
     const issues: Array<Record<string, string>> = [];
 
     for (const config of activeConfigs) {
-      const provider = normalizeProvider(config.provider.toLowerCase());
+      const provider = convertAnthropicToClaudeProvider(config.provider.toLowerCase());
       if (!supportedProviders.has(provider)) {
         issues.push({ task: config.task_type, provider, issue: 'unsupported_provider' });
       }
