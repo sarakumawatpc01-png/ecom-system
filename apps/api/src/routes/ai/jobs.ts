@@ -16,6 +16,10 @@ const rewriteSchema = z.object({
 
 const cryptoSecret = process.env.AI_CONFIG_ENCRYPTION_SECRET || process.env.JWT_SECRET || 'dev-encryption-secret';
 const decryptApiKey = (cipher: string) => decryptText(cipher, cryptoSecret);
+const asRecord = (value: unknown): Record<string, unknown> => {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return {};
+  return value as Record<string, unknown>;
+};
 
 const getActiveConfig = async (taskType: string) =>
   db.ai_model_config.findFirst({
@@ -86,19 +90,45 @@ router.post('/jobs/:id/approve', async (req, res) => {
   if (!siteId) return res.status(400).json({ ok: false, message: 'Missing site scope' });
   const job = await db.ai_jobs.findFirst({ where: { site_id: siteId, id: req.params.id } });
   if (!job) return res.status(404).json({ ok: false, message: 'Job not found' });
-  if (job.entity_type === 'product' && job.entity_id && job.output_payload) {
-    const payload = job.output_payload as Record<string, unknown>;
-    await db.products.updateMany({
-      where: { site_id: siteId, id: job.entity_id },
-      data: {
-        description: typeof payload.description === 'string' ? payload.description : undefined,
-        short_description: typeof payload.short_description === 'string' ? payload.short_description : undefined,
-        seo_title: typeof payload.seo_title === 'string' ? payload.seo_title : undefined,
-        seo_description: typeof payload.seo_description === 'string' ? payload.seo_description : undefined
-      }
-    });
+  const payload = asRecord(job.output_payload);
+  const media = asRecord(payload.media);
+  if (job.entity_type === 'product' && job.entity_id && Object.keys(payload).length > 0) {
+    if (job.task_type === 'image_generation' && typeof media.path === 'string') {
+      await db.product_images.updateMany({ where: { site_id: siteId, product_id: job.entity_id }, data: { is_primary: false } });
+      await db.product_images.create({
+        data: {
+          site_id: siteId,
+          product_id: job.entity_id,
+          url: media.path,
+          original_url: typeof media.sourceUrl === 'string' ? media.sourceUrl : null,
+          alt_text: typeof media.filename === 'string' ? media.filename : null,
+          is_primary: true,
+          source: 'ai_generated'
+        }
+      });
+    } else if (job.task_type === 'video_generation' && typeof media.path === 'string') {
+      await db.product_videos.create({
+        data: {
+          site_id: siteId,
+          product_id: job.entity_id,
+          url: media.path,
+          source: 'ai_generated',
+          provider: typeof job.provider === 'string' ? job.provider : null
+        }
+      });
+    } else {
+      await db.products.updateMany({
+        where: { site_id: siteId, id: job.entity_id },
+        data: {
+          description: typeof payload.description === 'string' ? payload.description : undefined,
+          short_description: typeof payload.short_description === 'string' ? payload.short_description : undefined,
+          seo_title: typeof payload.seo_title === 'string' ? payload.seo_title : undefined,
+          seo_description: typeof payload.seo_description === 'string' ? payload.seo_description : undefined
+        }
+      });
+    }
   }
-  const updated = await db.ai_jobs.update({ where: { id: job.id }, data: { status: 'approved' } });
+  const updated = await db.ai_jobs.update({ where: { id: job.id }, data: { status: 'approved', approved_at: new Date() } });
   return res.json({ ok: true, data: updated });
 });
 

@@ -9,7 +9,7 @@ Status legend: **Done** = implemented in codebase, **Partial** = scaffolded/inco
 | 2 | 3 (database schema) | Partial | `/home/runner/work/ecom-system/ecom-system/packages/db/prisma/schema.prisma` (expanded fields/enums/indexes), regenerated client via `packages/db prisma:generate` |
 | 3 | 4 (shared API) | Partial | `/home/runner/work/ecom-system/ecom-system/apps/api/src/index.ts`, `/home/runner/work/ecom-system/ecom-system/apps/api/src/routes/**/*` (role matrix enforcement tightened for products/orders/blog/redirects/landing pages/A-B tests and site status handling) |
 | 4 | 5 (Meesho import) | Partial | `/home/runner/work/ecom-system/ecom-system/apps/api/src/routes/import/meesho.ts`, `/home/runner/work/ecom-system/ecom-system/apps/api/src/services/meeshoScraper.ts`, `/home/runner/work/ecom-system/ecom-system/apps/api/src/services/mediaStore.ts` (review filtering + product/review/media persistence + AI job queueing scaffolded) |
-| 5 | 6 (AI model management + generation) | Partial | `/home/runner/work/ecom-system/ecom-system/apps/api/src/routes/ai/**/*`, `/home/runner/work/ecom-system/ecom-system/apps/api/src/services/ai/**/*` |
+| 5 | 6 (AI model management + generation) | Partial | `/home/runner/work/ecom-system/ecom-system/apps/api/src/routes/ai/**/*`, `/home/runner/work/ecom-system/ecom-system/apps/api/src/services/ai/**/*` (image/video generation now lands in `needs_approval`; approvals persist AI-generated media to `product_images`/`product_videos`) |
 | 6 | 7 (AI SEO agent) | Partial | `/home/runner/work/ecom-system/ecom-system/apps/api/src/routes/seo/agent.ts`, `/home/runner/work/ecom-system/ecom-system/apps/api/src/workers/seoWorker.ts` |
 | 7 | 8 (Heatmaps/session intelligence) | Partial | `/home/runner/work/ecom-system/ecom-system/apps/api/src/routes/heatmaps.ts`, `/home/runner/work/ecom-system/ecom-system/packages/db/prisma/schema.prisma` (`heatmap_events`) |
 | 8 | 9 (Ads command centre) | Partial | `/home/runner/work/ecom-system/ecom-system/apps/api/src/routes/ads.ts`, `/home/runner/work/ecom-system/ecom-system/apps/api/src/index.ts` (`/api/ads/overview`) |
@@ -30,3 +30,11 @@ Status legend: **Done** = implemented in codebase, **Partial** = scaffolded/inco
 - Backup script hardening with dependency checks, retention windows, and optional remote sync command.
 - SSL renewal automation script added for certbot+nginx.
 - Cron installer script added for scheduled backup + SSL renewal.
+
+## Phase 5 continuation delivered in this change
+
+- AI image generation jobs now transition to `needs_approval` instead of immediate completion.
+- AI video generation jobs now transition to `needs_approval` instead of immediate completion.
+- AI job approval flow now applies approved generated media to product entities:
+  - image jobs create `product_images` with `source = "ai_generated"` and set primary image
+  - video jobs create `product_videos` with `source = "ai_generated"`
