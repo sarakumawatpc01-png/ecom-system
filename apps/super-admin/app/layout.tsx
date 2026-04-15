@@ -19,6 +19,7 @@ const navItems = [
   { label: 'Landing Pages', href: '/landing-pages' },
   { label: 'Analytics', href: '/analytics' },
   { label: 'Infrastructure', href: '/infrastructure' },
+  { label: 'Deploy Site ZIP', href: '/deploy-site-zip' },
   { label: 'Users & Permissions', href: '/users-permissions' },
   { label: 'Settings', href: '/settings' }
 ];
