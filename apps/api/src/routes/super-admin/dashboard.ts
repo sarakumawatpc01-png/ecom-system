@@ -21,7 +21,7 @@ router.get('/summary', async (_req, res) => {
     orders7d,
     openSeoIssues,
     pendingAiApprovals,
-    incidentsOpen,
+    queuedOrFailedEmailLogs,
     recentAudit
   ] = await Promise.all([
     db.sites.count({ where: { is_deleted: false } }),
@@ -79,7 +79,8 @@ router.get('/summary', async (_req, res) => {
       alerts: {
         open_seo_issues: openSeoIssues,
         pending_ai_approvals: pendingAiApprovals,
-        incidents_open: incidentsOpen
+        deployment_failures_24h: deploymentsFailed,
+        queued_or_failed_email_logs: queuedOrFailedEmailLogs
       },
       recent_audit_events: recentAudit
     }

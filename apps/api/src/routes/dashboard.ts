@@ -1,4 +1,5 @@
 import { Router } from 'express';
+import { z } from 'zod';
 import { db } from '../lib/db';
 import { injectSiteScope } from '../middleware/siteScope';
 import { getSiteId } from '../utils/request';
@@ -10,6 +11,10 @@ router.get('/summary', async (req, res) => {
   const siteId = getSiteId(req);
   if (!siteId) {
     return res.status(400).json({ ok: false, message: 'Missing site scope' });
+  }
+  const uuidCheck = z.string().uuid().safeParse(siteId);
+  if (!uuidCheck.success) {
+    return res.status(400).json({ ok: false, message: 'Invalid site scope' });
   }
 
   const now = Date.now();

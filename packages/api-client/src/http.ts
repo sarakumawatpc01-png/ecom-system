@@ -5,9 +5,10 @@ export type ApiGetOptions = {
 
 const ensureOk = async (res: Response) => {
   if (!res.ok) {
-    const payload = await res
-      .json()
-      .catch(() => ({ message: `HTTP ${res.status}` }));
+    const contentType = res.headers.get('content-type') || '';
+    const payload = contentType.includes('application/json')
+      ? await res.json().catch((error) => ({ message: `HTTP ${res.status}: Failed to parse response (${String(error)})` }))
+      : { message: `HTTP ${res.status}` };
     throw new Error(String(payload?.message || `HTTP ${res.status}`));
   }
   return res.json();

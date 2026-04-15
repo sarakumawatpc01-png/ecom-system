@@ -21,7 +21,8 @@ export type SuperAdminDashboardSummary = {
   alerts: {
     open_seo_issues: number;
     pending_ai_approvals: number;
-    incidents_open: number;
+    deployment_failures_24h: number;
+    queued_or_failed_email_logs: number;
   };
   recent_audit_events: Array<{
     id: string;

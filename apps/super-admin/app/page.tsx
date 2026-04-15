@@ -1,22 +1,16 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { SuperAdminDashboardSummary, getSuperAdminDashboardSummary } from '../../../packages/api-client/src/dashboard';
+import { SuperAdminDashboardSummary, getStoredAuthToken, getSuperAdminDashboardSummary } from '@ecom/api-client';
 
 const apiBase = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:5000';
-
-const tokenFromStorage = () =>
-  globalThis.localStorage?.getItem('access_token') ||
-  globalThis.localStorage?.getItem('auth:token') ||
-  globalThis.localStorage?.getItem('token') ||
-  '';
 
 export default function SuperAdminHome() {
   const [data, setData] = useState<SuperAdminDashboardSummary | null>(null);
   const [error, setError] = useState('');
 
   useEffect(() => {
-    const token = tokenFromStorage();
+    const token = getStoredAuthToken();
     if (!token) {
       setError('Missing access token in localStorage');
       return;
@@ -33,7 +27,8 @@ export default function SuperAdminHome() {
     ['Deploy success (24h)', `${Math.round((data?.deployments.success_rate ?? 0) * 100)}%`],
     ['Paid revenue (7d)', `₹${(data?.revenue_usage.paid_order_revenue ?? 0).toFixed(2)}`],
     ['Orders (7d)', String(data?.revenue_usage.orders ?? 0)],
-    ['Open incidents', String(data?.alerts.incidents_open ?? 0)],
+    ['Deployment failures (24h)', String(data?.alerts.deployment_failures_24h ?? 0)],
+    ['Queued/failed emails', String(data?.alerts.queued_or_failed_email_logs ?? 0)],
     ['Open SEO issues', String(data?.alerts.open_seo_issues ?? 0)]
   ];
 

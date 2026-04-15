@@ -1,6 +1,12 @@
 {
   "extends": "../../tsconfig.base.json",
   "compilerOptions": {
+    "baseUrl": ".",
+    "paths": {
+      "@ecom/api-client": [
+        "../../packages/api-client/src/index.ts"
+      ]
+    },
     "module": "ESNext",
     "moduleResolution": "Bundler",
     "jsx": "preserve",

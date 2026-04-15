@@ -1,16 +1,10 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { SiteDashboardSummary, getSiteDashboardSummary } from '../../../packages/api-client/src/dashboard';
+import { SiteDashboardSummary, getSiteDashboardSummary, getStoredAuthToken } from '@ecom/api-client';
 
 const apiBase = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:5000';
 const defaultSiteId = process.env.NEXT_PUBLIC_SITE_ID || '';
-
-const tokenFromStorage = () =>
-  globalThis.localStorage?.getItem('access_token') ||
-  globalThis.localStorage?.getItem('auth:token') ||
-  globalThis.localStorage?.getItem('token') ||
-  '';
 
 const siteIdFromStorage = () =>
   globalThis.localStorage?.getItem('active-site-id') ||
@@ -22,7 +16,7 @@ export default function SiteAdminHome() {
   const [error, setError] = useState('');
 
   useEffect(() => {
-    const token = tokenFromStorage();
+    const token = getStoredAuthToken();
     const siteId = siteIdFromStorage();
     if (!token) {
       setError('Missing access token in localStorage');
@@ -43,7 +37,7 @@ export default function SiteAdminHome() {
     ['Low inventory', String(data?.low_inventory ?? 0)],
     ['Active products', String(data?.active_products ?? 0)],
     ['Customers', String(data?.customers_total ?? 0)],
-    ['SEO open issues', String(data?.site_health.open_seo_issues ?? 0)],
+    ['SEO Open Issues', String(data?.site_health.open_seo_issues ?? 0)],
     ['Traffic events (24h)', String(data?.site_health.traffic_events_24h ?? 0)],
     ['Queued/failed tasks', String(data?.tasks_alerts.queued_or_failed_jobs ?? 0)]
   ];
