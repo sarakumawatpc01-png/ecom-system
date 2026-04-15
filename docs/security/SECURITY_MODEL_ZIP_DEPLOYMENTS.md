@@ -14,7 +14,7 @@
 ## Archive hardening
 - Enforced max compressed/extracted size and max file count.
 - Rejects path traversal (`..`), absolute paths, symlinks, and device files.
-- Rejects blocked executable extensions (`.exe`, `.dll`, `.bat`, `.cmd`, `.ps1`, `.sh`).
+- Rejects blocked executable extensions (`.exe`, `.dll`, `.bat`, `.cmd`, `.ps1`).
 - Optional malware scan hook command before extraction.
 
 ## Command execution safeguards

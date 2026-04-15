@@ -23,7 +23,14 @@ export const startDeploymentWorker = () => {
   const timer = setInterval(async () => {
     const jobs = await deploymentQueue.drainMemoryJobs();
     for (const job of jobs) {
-      await processDeploymentJob(job.payload.deploymentJobId);
+      try {
+        await processDeploymentJob(job.payload.deploymentJobId);
+      } catch (error) {
+        console.error('[deploymentWorker-memory] job failed', {
+          jobId: job.id,
+          error: error instanceof Error ? error.message : 'unknown error'
+        });
+      }
     }
   }, 2000);
 

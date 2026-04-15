@@ -1,4 +1,6 @@
 import { spawn } from 'child_process';
+import { accessSync, constants } from 'fs';
+import path from 'path';
 import { redactSecrets } from './redaction';
 
 export type CommandResult = {
@@ -7,13 +9,33 @@ export type CommandResult = {
   code: number;
 };
 
+const commandPattern = /^[a-zA-Z0-9._-]+$/;
+const executableRoots = ['/usr/local/bin', '/usr/bin', '/bin', '/usr/sbin', '/sbin'];
+
+const resolveSafeExecutable = (command: string) => {
+  if (!commandPattern.test(command)) {
+    throw new Error(`Unsafe command executable: ${command}`);
+  }
+  for (const root of executableRoots) {
+    const candidate = path.join(root, command);
+    try {
+      accessSync(candidate, constants.X_OK);
+      return candidate;
+    } catch {
+      continue;
+    }
+  }
+  throw new Error(`Executable not found in allowlisted paths: ${command}`);
+};
+
 export const runCommand = (
   command: string,
   args: string[],
   options: { cwd?: string; timeoutMs?: number; env?: NodeJS.ProcessEnv } = {}
 ): Promise<CommandResult> =>
   new Promise((resolve, reject) => {
-    const child = spawn(command, args, {
+    const executable = resolveSafeExecutable(command);
+    const child = spawn(executable, args, {
       cwd: options.cwd,
       env: { ...process.env, ...(options.env || {}) },
       stdio: ['ignore', 'pipe', 'pipe']

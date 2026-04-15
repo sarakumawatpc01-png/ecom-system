@@ -9,9 +9,23 @@ import { redactSecrets } from './redaction';
 import { assertStatusTransition } from './stateMachine';
 import { extractZipSafely, inspectZipArchive, isZipSignature, runMalwareScanHook, validateZipEntries } from './zipSecurity';
 
-const defaultPort = Number(process.env.DEPLOYMENT_DEFAULT_PORT || 3100);
+type RollbackCandidateJob = {
+  id: string;
+  site_slug: string;
+  site_id: string;
+  domain: string;
+};
 
 const nowIso = () => new Date().toISOString();
+
+const safeResolveUnder = (baseDir: string, ...parts: string[]) => {
+  const baseResolved = path.resolve(baseDir);
+  const target = path.resolve(baseResolved, ...parts);
+  if (target !== baseResolved && !target.startsWith(`${baseResolved}${path.sep}`)) {
+    throw new Error(`Unsafe path resolution outside base directory: ${baseDir}`);
+  }
+  return target;
+};
 
 export const withBackoff = async <T>(
   run: () => Promise<T>,
@@ -82,17 +96,17 @@ const setPhase = async (deploymentJobId: string, phase: DeploymentPhase, message
 };
 
 const ensureWorkspace = async (deploymentJobId: string) => {
-  const workspacePath = path.join(DEPLOYMENT_CONFIG.workspaceDir, deploymentJobId);
+  const workspacePath = safeResolveUnder(DEPLOYMENT_CONFIG.workspaceDir, deploymentJobId);
   await rm(workspacePath, { recursive: true, force: true });
   await mkdir(workspacePath, { recursive: true });
   return workspacePath;
 };
 
 const getReleasePaths = (siteSlug: string, domain: string, releaseVersion: string) => {
-  const baseDir = path.join(DEPLOYMENT_CONFIG.releasesDir, siteSlug, domain);
-  const releasesDir = path.join(baseDir, 'releases');
-  const releaseDir = path.join(releasesDir, releaseVersion);
-  const currentLink = path.join(baseDir, 'current');
+  const baseDir = safeResolveUnder(DEPLOYMENT_CONFIG.releasesDir, siteSlug, domain);
+  const releasesDir = safeResolveUnder(baseDir, 'releases');
+  const releaseDir = safeResolveUnder(releasesDir, releaseVersion);
+  const currentLink = safeResolveUnder(baseDir, 'current');
   return { baseDir, releasesDir, releaseDir, currentLink };
 };
 
@@ -257,7 +271,7 @@ export const createDeploymentJob = async (input: {
       site_id: input.siteId,
       site_name: input.siteName,
       domain: normalizedDomain,
-      requested_port: input.optionalPort || defaultPort,
+      requested_port: input.optionalPort || DEPLOYMENT_CONFIG.defaultPort,
       initiated_by: input.initiatedBy,
       status: 'queued',
       current_phase: 'queued',
@@ -331,7 +345,7 @@ const markReleaseActive = async (siteSlug: string, domain: string, releaseVersio
   });
 };
 
-const rollbackToLastGoodRelease = async (job: any, reason: string) => {
+const rollbackToLastGoodRelease = async (job: RollbackCandidateJob, reason: string) => {
   const release = await db.site_releases.findFirst({
     where: { site_slug: job.site_slug, domain: job.domain, active: false },
     orderBy: { created_at: 'desc' }
@@ -437,7 +451,7 @@ export const processDeploymentJob = async (deploymentJobId: string) => {
     await cleanOldReleases(job.site_slug, job.domain);
 
     await setPhase(job.id, 'configure_nginx', 'Generating and applying nginx site config');
-    const nginxConfigPath = await configureNginx(job.domain, job.requested_port || defaultPort);
+    const nginxConfigPath = await configureNginx(job.domain, job.requested_port || DEPLOYMENT_CONFIG.defaultPort);
     await emitEvent(job.id, 'configure_nginx', 'info', 'Nginx config generated', { nginxConfigPath });
 
     await setPhase(job.id, 'provision_ssl', 'Provisioning/renewing SSL certificate');
@@ -445,10 +459,13 @@ export const processDeploymentJob = async (deploymentJobId: string) => {
     await emitEvent(job.id, 'provision_ssl', 'info', 'SSL provisioning complete', sslResult as Record<string, unknown>);
 
     await setPhase(job.id, 'health_checks', 'Running internal and external health checks');
-    await runHealthChecks(job.domain, job.requested_port || defaultPort, job.id);
+    await runHealthChecks(job.domain, job.requested_port || DEPLOYMENT_CONFIG.defaultPort, job.id);
 
     await setPhase(job.id, 'finalize', 'Finalizing deployment');
-    await db.sites.update({ where: { id: job.site_id }, data: { domain: job.domain, slug: job.site_slug, name: job.site_name } });
+    await db.sites.update({
+      where: { id: job.site_id },
+      data: { domain: job.domain, nginx_port: job.requested_port || DEPLOYMENT_CONFIG.defaultPort }
+    });
     await updateJob(job.id, { status: 'success', current_phase: 'finalize', finished_at: new Date(), error_code: null, error_summary: null });
     await emitEvent(job.id, 'finalize', 'info', 'Deployment completed successfully');
 
@@ -491,14 +508,14 @@ export const processDeploymentJob = async (deploymentJobId: string) => {
     });
   } finally {
     await releaseLock(job.site_slug, job.domain);
-    await rm(path.join(DEPLOYMENT_CONFIG.workspaceDir, job.id), { recursive: true, force: true }).catch(() => undefined);
+    await rm(safeResolveUnder(DEPLOYMENT_CONFIG.workspaceDir, job.id), { recursive: true, force: true }).catch(() => undefined);
   }
 };
 
 export const persistUploadedArchive = async (sourcePath: string, fileName: string) => {
   await mkdir(DEPLOYMENT_CONFIG.uploadDir, { recursive: true });
   const safeName = `${Date.now()}-${fileName.replace(/[^a-zA-Z0-9._-]/g, '_')}`;
-  const targetPath = path.join(DEPLOYMENT_CONFIG.uploadDir, safeName);
+  const targetPath = safeResolveUnder(DEPLOYMENT_CONFIG.uploadDir, safeName);
   await copyFile(sourcePath, targetPath);
   return targetPath;
 };

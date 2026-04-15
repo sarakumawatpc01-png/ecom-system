@@ -51,8 +51,8 @@ with zipfile.ZipFile(zpath, 'r') as zf:
       dst.write(src.read())
 `;
 
-const allowedDisallowedPrefix = ['/', '\\'];
-const blockedExtensions = new Set(['.exe', '.dll', '.bat', '.cmd', '.ps1', '.sh']);
+const disallowedPathPrefixes = ['/', '\\'];
+const blockedExtensions = new Set(['.exe', '.dll', '.bat', '.cmd', '.ps1']);
 
 export const isZipSignature = async (archivePath: string) => {
   const file = await readFile(archivePath);
@@ -80,7 +80,7 @@ export const validateZipEntries = (entries: ZipEntryInfo[]) => {
     const normalized = path.posix.normalize(entry.filename || '');
     if (!normalized || normalized === '.') continue;
 
-    if (normalized.includes('..') || allowedDisallowedPrefix.some((prefix) => normalized.startsWith(prefix))) {
+    if (normalized.includes('..') || disallowedPathPrefixes.some((prefix) => normalized.startsWith(prefix))) {
       throw new Error(`ZIP contains unsafe path: ${entry.filename}`);
     }
 

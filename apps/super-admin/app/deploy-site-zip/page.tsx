@@ -124,8 +124,7 @@ export default function DeploySiteZipPage() {
       const response = await fetch(`${apiBase}/api/super-admin/deployments`, {
         method: 'POST',
         headers: {
-          Authorization: `Bearer ${token}`,
-          'Idempotency-Key': `${siteSlug}:${domain}:${zipFile?.name || 'zip'}`
+          Authorization: `Bearer ${token}`
         },
         body: form
       });

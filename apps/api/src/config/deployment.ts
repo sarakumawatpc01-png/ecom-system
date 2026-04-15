@@ -1,5 +1,6 @@
 export const DEPLOYMENT_CONFIG = {
   uploadDir: process.env.DEPLOYMENT_UPLOAD_DIR || '/tmp/ecom-deployments/uploads',
+  incomingUploadDir: process.env.DEPLOYMENT_INCOMING_UPLOAD_DIR || '/tmp/ecom-deployments/incoming',
   workspaceDir: process.env.DEPLOYMENT_WORKSPACE_DIR || '/tmp/ecom-deployments/workspaces',
   releasesDir: process.env.DEPLOYMENT_RELEASES_DIR || '/tmp/ecom-deployments/releases',
   nginxOutputDir: process.env.DEPLOYMENT_NGINX_OUTPUT_DIR || '/tmp/ecom-deployments/nginx',
@@ -9,6 +10,10 @@ export const DEPLOYMENT_CONFIG = {
   maxBuildSeconds: Number(process.env.DEPLOYMENT_MAX_BUILD_SECONDS || 900),
   maxHealthRetries: Number(process.env.DEPLOYMENT_MAX_HEALTH_RETRIES || 5),
   keepReleaseCount: Number(process.env.DEPLOYMENT_KEEP_RELEASE_COUNT || 5),
+  defaultPort: Number(process.env.DEPLOYMENT_DEFAULT_PORT || 3100),
+  rateLimitWindowMs: Number(process.env.DEPLOYMENT_RATE_LIMIT_WINDOW_MS || 60_000),
+  rateLimitIpPerWindow: Number(process.env.DEPLOYMENT_RATE_LIMIT_IP_PER_WINDOW || 10),
+  rateLimitUserPerWindow: Number(process.env.DEPLOYMENT_RATE_LIMIT_USER_PER_WINDOW || 20),
   internalHealthPath: process.env.DEPLOYMENT_INTERNAL_HEALTH_PATH || '/api/health',
   externalHealthPath: process.env.DEPLOYMENT_EXTERNAL_HEALTH_PATH || '/',
   simulateInfraChanges: process.env.DEPLOYMENT_SIMULATE_INFRA_CHANGES !== 'false',

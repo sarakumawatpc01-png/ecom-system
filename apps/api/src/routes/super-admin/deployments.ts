@@ -1,4 +1,5 @@
 import { mkdir, rm } from 'fs/promises';
+import path from 'path';
 import multer from 'multer';
 import { Router } from 'express';
 import { z } from 'zod';
@@ -6,6 +7,7 @@ import { DEPLOYMENT_CONFIG } from '../../config/deployment';
 import { requireRole } from '../../middleware/auth';
 import { deploymentRateLimit, requireCsrfHeaderIfConfigured } from '../../middleware/deploymentSecurity';
 import { deploymentQueue } from '../../queues/deploymentQueue';
+import { AppRequest } from '../../types';
 import {
   createDeploymentJob,
   getDeploymentJob,
@@ -19,8 +21,23 @@ import { toPagination } from '../../utils/request';
 
 const router = Router();
 
-const incomingDir = '/tmp/ecom-deployments/incoming';
+const incomingDir = DEPLOYMENT_CONFIG.incomingUploadDir;
+const incomingDirResolved = path.resolve(incomingDir);
 void mkdir(incomingDir, { recursive: true });
+
+const resolveIncomingPath = (candidatePath: string) => {
+  const resolved = path.resolve(candidatePath);
+  if (!resolved.startsWith(`${incomingDirResolved}${path.sep}`)) {
+    throw new Error('Invalid upload file path');
+  }
+  return resolved;
+};
+
+const removeIncomingFile = async (candidatePath?: string) => {
+  if (!candidatePath) return;
+  const safePath = resolveIncomingPath(candidatePath);
+  await rm(safePath, { force: true }).catch(() => undefined);
+};
 
 const upload = multer({
   dest: incomingDir,
@@ -28,7 +45,7 @@ const upload = multer({
     fileSize: DEPLOYMENT_CONFIG.maxCompressedBytes,
     files: 1
   },
-  fileFilter: (_req, file, cb) => {
+  fileFilter: (_req: unknown, file: { originalname: string; mimetype?: string }, cb: (err: Error | null, ok?: boolean) => void) => {
     const lower = file.originalname.toLowerCase();
     if (!lower.endsWith('.zip')) {
       cb(new Error('Only .zip uploads are supported'));
@@ -56,22 +73,22 @@ router.use(requireRole('super_admin'));
 router.use(requireCsrfHeaderIfConfigured);
 router.use(deploymentRateLimit);
 
-router.post('/', upload.single('zipFile'), async (req, res) => {
+router.post('/', upload.single('zipFile'), async (req: AppRequest & { file?: { path: string; originalname: string; size: number } }, res) => {
   const parsed = createSchema.safeParse(req.body || {});
   if (!parsed.success) {
-    if (req.file?.path) await rm(req.file.path, { force: true }).catch(() => undefined);
+    await removeIncomingFile(req.file?.path);
     return res.status(400).json({ ok: false, message: 'Invalid payload', issues: parsed.error.issues });
   }
   if (!req.file) {
     return res.status(400).json({ ok: false, message: 'zipFile is required' });
   }
   if (!validateDomainFormat(parsed.data.domain)) {
-    await rm(req.file.path, { force: true }).catch(() => undefined);
+    await removeIncomingFile(req.file.path);
     return res.status(400).json({ ok: false, message: 'Invalid domain format' });
   }
 
   try {
-    const archivePath = await persistUploadedArchive(req.file.path, req.file.originalname);
+    const archivePath = await persistUploadedArchive(resolveIncomingPath(req.file.path), req.file.originalname);
     const { job } = await createDeploymentJob({
       siteSlug: parsed.data.siteSlug,
       siteId: parsed.data.siteId,
@@ -85,11 +102,11 @@ router.post('/', upload.single('zipFile'), async (req, res) => {
     });
 
     await deploymentQueue.add({ deploymentJobId: job.id });
-    await rm(req.file.path, { force: true }).catch(() => undefined);
+    await removeIncomingFile(req.file.path);
 
     return res.status(202).json({ ok: true, data: { deploymentJobId: job.id, status: job.status } });
   } catch (error) {
-    await rm(req.file.path, { force: true }).catch(() => undefined);
+    await removeIncomingFile(req.file.path);
     return res.status(400).json({ ok: false, message: error instanceof Error ? error.message : 'Unable to create deployment job' });
   }
 });
@@ -111,7 +128,7 @@ router.get('/metrics/summary', async (_req, res) => {
   return res.json({ ok: true, data: metrics });
 });
 
-router.get('/:id', async (req, res) => {
+router.get('/:id', async (req: AppRequest, res) => {
   const job = await getDeploymentJob(req.params.id);
   if (!job) {
     return res.status(404).json({ ok: false, message: 'Deployment job not found' });
@@ -119,7 +136,7 @@ router.get('/:id', async (req, res) => {
   return res.json({ ok: true, data: job });
 });
 
-router.post('/:id/rollback', async (req, res) => {
+router.post('/:id/rollback', async (req: AppRequest, res) => {
   try {
     await requestRollback(req.params.id, String(req.ctx?.user?.sub || ''));
     return res.json({ ok: true, data: { deploymentJobId: req.params.id, status: 'rolled_back' } });

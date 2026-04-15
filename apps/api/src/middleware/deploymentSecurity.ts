@@ -2,10 +2,6 @@ import { NextFunction, Response } from 'express';
 import { DEPLOYMENT_CONFIG } from '../config/deployment';
 import { AppRequest } from '../types';
 
-const windowMs = 60_000;
-const ipLimit = 10;
-const userLimit = 20;
-
 const ipHits = new Map<string, { count: number; expires: number }>();
 const userHits = new Map<string, { count: number; expires: number }>();
 
@@ -13,7 +9,7 @@ const consume = (store: Map<string, { count: number; expires: number }>, key: st
   const now = Date.now();
   const entry = store.get(key);
   if (!entry || entry.expires < now) {
-    store.set(key, { count: 1, expires: now + windowMs });
+    store.set(key, { count: 1, expires: now + DEPLOYMENT_CONFIG.rateLimitWindowMs });
     return true;
   }
   if (entry.count >= limit) return false;
@@ -24,10 +20,10 @@ const consume = (store: Map<string, { count: number; expires: number }>, key: st
 export const deploymentRateLimit = (req: AppRequest, res: Response, next: NextFunction) => {
   const ip = req.ip || req.socket.remoteAddress || 'unknown';
   const userId = req.ctx?.user?.sub || 'anonymous';
-  if (!consume(ipHits, ip, ipLimit)) {
+  if (!consume(ipHits, ip, DEPLOYMENT_CONFIG.rateLimitIpPerWindow)) {
     return res.status(429).json({ ok: false, message: 'Deployment IP rate limit exceeded' });
   }
-  if (!consume(userHits, userId, userLimit)) {
+  if (!consume(userHits, userId, DEPLOYMENT_CONFIG.rateLimitUserPerWindow)) {
     return res.status(429).json({ ok: false, message: 'Deployment user rate limit exceeded' });
   }
   return next();
