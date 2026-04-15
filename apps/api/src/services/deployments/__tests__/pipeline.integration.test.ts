@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { withBackoff } from '../service';
+import { withBackoff } from '../backoff';
 import { assertStatusTransition } from '../stateMachine';
 
 test('integration: SSL step retries then succeeds', async () => {

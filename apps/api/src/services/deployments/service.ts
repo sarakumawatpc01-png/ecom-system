@@ -7,6 +7,7 @@ import { runCommand } from './command';
 import { assertDomainAllowed, normalizeDomain } from './domainValidation';
 import { redactSecrets } from './redaction';
 import { assertStatusTransition } from './stateMachine';
+import { withBackoff } from './backoff';
 import { extractZipSafely, inspectZipArchive, isZipSignature, runMalwareScanHook, validateZipEntries } from './zipSecurity';
 
 type RollbackCandidateJob = {
@@ -15,6 +16,8 @@ type RollbackCandidateJob = {
   site_id: string;
   domain: string;
 };
+
+export { withBackoff } from './backoff';
 
 const nowIso = () => new Date().toISOString();
 
@@ -25,24 +28,6 @@ const safeResolveUnder = (baseDir: string, ...parts: string[]) => {
     throw new Error(`Unsafe path resolution outside base directory: ${baseDir}`);
   }
   return target;
-};
-
-export const withBackoff = async <T>(
-  run: () => Promise<T>,
-  opts: { retries: number; baseDelayMs: number; retryable?: (error: unknown) => boolean }
-): Promise<T> => {
-  let latest: unknown;
-  for (let attempt = 0; attempt <= opts.retries; attempt += 1) {
-    try {
-      return await run();
-    } catch (error) {
-      latest = error;
-      if (attempt === opts.retries || (opts.retryable && !opts.retryable(error))) throw latest;
-      const delay = opts.baseDelayMs * Math.pow(2, attempt);
-      await new Promise((resolve) => setTimeout(resolve, delay));
-    }
-  }
-  throw latest;
 };
 
 const assertValidPhase = (phase: string): DeploymentPhase => {
@@ -534,12 +519,12 @@ export const getDeploymentStats = async () => {
     .filter((item: DeploymentStatsJob) => item.started_at && item.finished_at)
     .map((item: DeploymentStatsJob) => (item.finished_at!.getTime() - item.started_at!.getTime()) / 1000);
 
-  const failedByPhase = jobs.reduce<Record<string, number>>((acc: Record<string, number>, item: DeploymentStatsJob) => {
+  const failedByPhase = jobs.reduce((acc: Record<string, number>, item: DeploymentStatsJob) => {
     if (item.status !== 'failed') return acc;
     const key = item.current_phase || 'unknown';
     acc[key] = (acc[key] || 0) + 1;
     return acc;
-  }, {});
+  }, {} as Record<string, number>);
 
   return {
     success_rate: jobs.length ? success / jobs.length : 0,
