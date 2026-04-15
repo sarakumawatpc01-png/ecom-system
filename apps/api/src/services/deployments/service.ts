@@ -325,9 +325,10 @@ export const getDeploymentJob = async (deploymentJobId: string) => {
     db.deployment_job_events.findMany({ where: { deployment_job_id: deploymentJobId }, orderBy: { created_at: 'asc' } }),
     db.site_releases.findMany({ where: { site_slug: job.site_slug, domain: job.domain }, orderBy: { created_at: 'desc' }, take: 5 })
   ]);
+  type DeploymentEvent = (typeof events)[number];
   return {
     ...job,
-    events: events.map((event) => ({ ...event, message: redactSecrets(event.message || '') })),
+    events: events.map((event: DeploymentEvent) => ({ ...event, message: redactSecrets(event.message || '') })),
     releases
   };
 };
@@ -525,14 +526,15 @@ export const getDeploymentStats = async () => {
     where: { created_at: { gte: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000) } },
     select: { status: true, started_at: true, finished_at: true, current_phase: true }
   });
-  const success = jobs.filter((item) => item.status === 'success').length;
-  const failed = jobs.filter((item) => item.status === 'failed').length;
-  const rolledBack = jobs.filter((item) => item.status === 'rolled_back').length;
+  type DeploymentStatsJob = (typeof jobs)[number];
+  const success = jobs.filter((item: DeploymentStatsJob) => item.status === 'success').length;
+  const failed = jobs.filter((item: DeploymentStatsJob) => item.status === 'failed').length;
+  const rolledBack = jobs.filter((item: DeploymentStatsJob) => item.status === 'rolled_back').length;
   const durations = jobs
-    .filter((item) => item.started_at && item.finished_at)
-    .map((item) => (item.finished_at!.getTime() - item.started_at!.getTime()) / 1000);
+    .filter((item: DeploymentStatsJob) => item.started_at && item.finished_at)
+    .map((item: DeploymentStatsJob) => (item.finished_at!.getTime() - item.started_at!.getTime()) / 1000);
 
-  const failedByPhase = jobs.reduce<Record<string, number>>((acc, item) => {
+  const failedByPhase = jobs.reduce<Record<string, number>>((acc: Record<string, number>, item: DeploymentStatsJob) => {
     if (item.status !== 'failed') return acc;
     const key = item.current_phase || 'unknown';
     acc[key] = (acc[key] || 0) + 1;
@@ -543,7 +545,7 @@ export const getDeploymentStats = async () => {
     success_rate: jobs.length ? success / jobs.length : 0,
     failed_count: failed,
     rolled_back_count: rolledBack,
-    avg_duration_seconds: durations.length ? durations.reduce((a, b) => a + b, 0) / durations.length : 0,
+    avg_duration_seconds: durations.length ? durations.reduce((a: number, b: number) => a + b, 0) / durations.length : 0,
     failed_phase_count: failedByPhase
   };
 };

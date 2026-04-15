@@ -720,7 +720,7 @@ model deployment_jobs {
   status           DeploymentJobStatus @default(queued)
   current_phase    String              @default("queued")
   archive_path     String
-  archive_size_bytes Int              @default(0)
+  archive_size_bytes  Int              @default(0)
   idempotency_key  String?
   created_at       DateTime            @default(now())
   started_at       DateTime?

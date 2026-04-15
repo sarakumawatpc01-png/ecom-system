@@ -21,6 +21,8 @@
 - Commands run with `spawn(command, args[])` (no shell interpolation).
 - Logs/errors are redacted before persistence and API response.
 - Deployment lock prevents concurrent deploys per site/domain.
+- Build/install stage uses `npm ci --ignore-scripts` to reduce supply-chain risk from lifecycle scripts.
+- Tradeoff: repos that require trusted lifecycle scripts for native builds may fail deployment and must be explicitly allowlisted via a controlled policy update.
 
 ## Auditability
 - All create/rollback actions write admin activity logs.
