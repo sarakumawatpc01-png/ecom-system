@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { SuperAdminDashboardSummary, getSuperAdminDashboardSummary } from '@ecom/api-client';
+import { SuperAdminDashboardSummary, getSuperAdminDashboardSummary } from '../../../packages/api-client/src/dashboard';
 
 const apiBase = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:5000';
 

@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { SiteDashboardSummary, getSiteDashboardSummary } from '@ecom/api-client';
+import { SiteDashboardSummary, getSiteDashboardSummary } from '../../../packages/api-client/src/dashboard';
 
 const apiBase = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:5000';
 const defaultSiteId = process.env.NEXT_PUBLIC_SITE_ID || '';
