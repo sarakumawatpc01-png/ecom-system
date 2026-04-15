@@ -32,6 +32,8 @@ import feedRoutes from './routes/feed/googleMerchant';
 import infraRoutes from './routes/infra';
 import prelaunchRoutes from './routes/prelaunch';
 import superAdminDeploymentRoutes from './routes/super-admin/deployments';
+import superAdminDashboardRoutes from './routes/super-admin/dashboard';
+import siteDashboardRoutes from './routes/dashboard';
 import { db } from './lib/db';
 import { authenticate } from './middleware/auth';
 import { adminActivityLogger } from './middleware/activityLogger';
@@ -99,8 +101,10 @@ app.get('/api/ads/overview', async (_req, res) => {
 app.use('/api/infra', infraRoutes);
 app.use('/api/notifications', notificationsRoutes);
 app.use('/api/super-admin/deployments', superAdminDeploymentRoutes);
+app.use('/api/super-admin/dashboard', superAdminDashboardRoutes);
 
 app.use('/api/:siteId/products', productsRoutes);
+app.use('/api/:siteId/dashboard', siteDashboardRoutes);
 app.use('/api/:siteId/categories', categoriesRoutes);
 app.use('/api/:siteId/orders', ordersRoutes);
 app.use('/api/:siteId/customers', customersRoutes);
