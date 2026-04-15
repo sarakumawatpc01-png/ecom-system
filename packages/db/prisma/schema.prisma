@@ -118,6 +118,14 @@ enum SeoSeverity {
   info
 }
 
+enum DeploymentJobStatus {
+  queued
+  running
+  success
+  failed
+  rolled_back
+}
+
 model sites {
   id                String      @id @default(uuid()) @db.Uuid
   domain            String      @unique
@@ -149,6 +157,7 @@ model sites {
   reviews           reviews[]
   review_images     review_images[]
   heatmap_events    heatmap_events[]
+  deployment_jobs   deployment_jobs[]
 
   @@index([status])
   @@index([is_deleted])
@@ -169,6 +178,7 @@ model users {
   access        user_site_access[]
   approved_jobs ai_jobs[]          @relation("ai_jobs_approved_by")
   authored_blog blog_posts[]
+  deployment_jobs deployment_jobs[] @relation("deployment_jobs_initiated_by")
 
   @@index([role])
   @@index([is_active])
@@ -697,4 +707,73 @@ model heatmap_events {
 
   @@index([site_id, created_at])
   @@index([site_id, page_url])
+}
+
+model deployment_jobs {
+  id               String              @id @default(uuid()) @db.Uuid
+  site_slug        String
+  site_id          String              @db.Uuid
+  site_name        String
+  domain           String
+  requested_port   Int?
+  initiated_by     String              @db.Uuid
+  status           DeploymentJobStatus @default(queued)
+  current_phase    String              @default("queued")
+  archive_path     String
+  archive_size_bytes  Int              @default(0)
+  idempotency_key  String?
+  created_at       DateTime            @default(now())
+  started_at       DateTime?
+  finished_at      DateTime?
+  error_code       String?
+  error_summary    String?
+  site             sites               @relation(fields: [site_id], references: [id], onDelete: Cascade)
+  initiated_by_user users              @relation("deployment_jobs_initiated_by", fields: [initiated_by], references: [id], onDelete: Restrict)
+  events           deployment_job_events[]
+
+  @@index([status, created_at])
+  @@index([site_slug, created_at])
+  @@index([domain, created_at])
+  @@index([site_id, created_at])
+  @@unique([initiated_by, idempotency_key])
+}
+
+model deployment_job_events {
+  id                String          @id @default(uuid()) @db.Uuid
+  deployment_job_id String          @db.Uuid
+  phase             String
+  level             String
+  message           String
+  metadata_json     Json?
+  created_at        DateTime        @default(now())
+  deployment_job    deployment_jobs @relation(fields: [deployment_job_id], references: [id], onDelete: Cascade)
+
+  @@index([deployment_job_id, created_at])
+  @@index([phase, created_at])
+}
+
+model site_releases {
+  id              String   @id @default(uuid()) @db.Uuid
+  site_slug       String
+  domain          String
+  release_version String
+  artifact_path   String
+  active          Boolean  @default(false)
+  created_at      DateTime @default(now())
+
+  @@index([site_slug, domain, created_at])
+  @@unique([site_slug, domain, release_version])
+}
+
+model deployment_locks {
+  id                String   @id @default(uuid()) @db.Uuid
+  site_slug         String
+  domain            String
+  lock_owner_job_id String?
+  acquired_at       DateTime @default(now())
+  released_at       DateTime?
+  is_active         Boolean  @default(true)
+
+  @@unique([site_slug, domain])
+  @@index([is_active, acquired_at])
 }

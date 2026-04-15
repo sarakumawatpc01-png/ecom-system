@@ -31,6 +31,7 @@ import notificationsRoutes from './routes/notifications';
 import feedRoutes from './routes/feed/googleMerchant';
 import infraRoutes from './routes/infra';
 import prelaunchRoutes from './routes/prelaunch';
+import superAdminDeploymentRoutes from './routes/super-admin/deployments';
 import { db } from './lib/db';
 import { authenticate } from './middleware/auth';
 import { adminActivityLogger } from './middleware/activityLogger';
@@ -41,6 +42,7 @@ import { startEmailWorker } from './workers/emailWorker';
 import { initSentry } from './services/monitoring/sentry';
 import { startGscWorker } from './workers/gscWorker';
 import { startSeoWorker } from './workers/seoWorker';
+import { startDeploymentWorker } from './workers/deploymentWorker';
 
 const app = express();
 const allowedOrigins = (process.env.CORS_ALLOWED_ORIGINS || 'http://localhost:3000,http://localhost:3001,http://localhost:3002')
@@ -96,6 +98,7 @@ app.get('/api/ads/overview', async (_req, res) => {
 });
 app.use('/api/infra', infraRoutes);
 app.use('/api/notifications', notificationsRoutes);
+app.use('/api/super-admin/deployments', superAdminDeploymentRoutes);
 
 app.use('/api/:siteId/products', productsRoutes);
 app.use('/api/:siteId/categories', categoriesRoutes);
@@ -131,5 +134,6 @@ app.listen(port, () => {
   startSeoWorker();
   startGscWorker();
   startEmailWorker();
+  startDeploymentWorker();
   console.log(`API listening on port ${port}`);
 });
